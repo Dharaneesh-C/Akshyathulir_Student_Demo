@@ -1,11 +1,9 @@
 import React from "react";
-import AppBar from "@mui/material/AppBar";
+
 import Box from "@mui/material/Box";
-import Toolbar from "@mui/material/Toolbar";
+
 import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
-import IconButton from "@mui/material/IconButton";
-import MenuIcon from "@mui/icons-material/Menu";
+
 
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -33,28 +31,6 @@ export default function Header() {
 
   return (
     <>
-      {/* ===== TOP HEADER ===== */}
-      <Box sx={{ flexGrow: 1 }}>
-        <AppBar position="static" sx={{ backgroundColor: "#0b5e00" }}>
-          <Toolbar>
-            <IconButton
-              size="large"
-              edge="start"
-              color="inherit"
-              aria-label="menu"
-              sx={{ mr: 2 }}
-            >
-              <MenuIcon />
-            </IconButton>
-
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              Training Institute Dashboard
-            </Typography>
-
-            <Button color="inherit">Login</Button>
-          </Toolbar>
-        </AppBar>
-      </Box>
 
       {/* ===== SECOND NAV BAR WITH TABS ===== */}
       <Box sx={{ width: "100%", typography: "body1", mt: 2 }}>
