@@ -1,181 +1,120 @@
-from fastapi import APIRouter, HTTPException, status
-from typing import Dict, Type
-from pydantic import BaseModel
-from bson import ObjectId
-from bson.errors import InvalidId
-
-# Database collections
-from database import (
-    certificates_collection, arts_collection, cse_collection,
-    mec_collection, law_collection, civil_collection, mba_collection,
-    science_collection, ece_collection, medical_collection,
-    it_collection, mca_collection, eee_collection,
-    courses_collection, trainers_collection, placements_collection
-)
-
-# Pydantic models
-from models import (
-    Certificate, Arts, CSE, MEC, LAW, CIVIL, MBA,
-    SCIENCE, ECE, MEDICAL, IT, MCA, EEE,
-    Course, Trainer, Placement
-)
+from fastapi import APIRouter, status, Form, HTTPException
+from model import Courses,Trainer,Placement,StartupApplication,Certificate
+from database import courses_collection,Trainer_collection,placement_collection,profile_collection,certificates_collection
 
 router = APIRouter()
 
 
-# -------------------------------------------------
-# ✅ ObjectId Validator (SIMPLE)
-# -------------------------------------------------
-def validate_object_id(id: str) -> ObjectId:
-    try:
-        return ObjectId(id)
-    except (InvalidId, TypeError):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid MongoDB ID format"
-        )
-
-# -------------------------------------------------
-# 🔁 COLLECTION MAP
-# -------------------------------------------------
-COLLECTION_MAP: Dict[str, any] = {
-    "certificates": certificates_collection,
-    "arts": arts_collection,
-    "cse": cse_collection,
-    "mec": mec_collection,
-    "law": law_collection,
-    "civil": civil_collection,
-    "mba": mba_collection,
-    "science": science_collection,
-    "ece": ece_collection,
-    "medical": medical_collection,
-    "it": it_collection,
-    "mca": mca_collection,
-    "eee": eee_collection,
-    "courses": courses_collection,
-    "trainers": trainers_collection,
-    "placements": placements_collection,
-}
-
-# -------------------------------------------------
-# 🔁 MODEL MAP
-# -------------------------------------------------
-MODEL_MAP: Dict[str, Type[BaseModel]] = {
-    "certificates": Certificate,
-    "arts": Arts,
-    "cse": CSE,
-    "mec": MEC,
-    "law": LAW,
-    "civil": CIVIL,
-    "mba": MBA,
-    "science": SCIENCE,
-    "ece": ECE,
-    "medical": MEDICAL,
-    "it": IT,
-    "mca": MCA,
-    "eee": EEE,
-    "courses": Course,
-    "trainers": Trainer,
-    "placements": Placement,
-}
-
-# -------------------------------------------------
-# ✅ SINGLE POST (ALL DEPARTMENTS)
-# -------------------------------------------------
-@router.post("/{department}", status_code=status.HTTP_201_CREATED)
-def create_data(department: str, data: dict):
-    department = department.lower()
-
-    if department not in COLLECTION_MAP:
-        raise HTTPException(status_code=400, detail="Invalid department ❌")
-
-    try:
-        model = MODEL_MAP[department](**data)
-    except Exception as e:
-        raise HTTPException(status_code=422, detail=str(e))
-
-    result = COLLECTION_MAP[department].insert_one(model.model_dump())
+@router.post("/courses", status_code=status.HTTP_201_CREATED)
+def create_course(course: Courses):
+    result = courses_collection.insert_one(course.model_dump())
 
     return {
-        "message": f"{department.upper()} data added successfully ✅",
+        "message": "Course added successfully",
         "id": str(result.inserted_id)
     }
 
-# -------------------------------------------------
-# ✅ SINGLE GET (ALL DEPARTMENTS)
-# -------------------------------------------------
-@router.get("/{department}")
-def get_all_data(department: str):
-    department = department.lower()
 
-    if department not in COLLECTION_MAP:
-        raise HTTPException(status_code=400, detail="Invalid department ❌")
+@router.get("/courses")
+def get_courses():
+    courses = []
 
-    result = []
-    for item in COLLECTION_MAP[department].find():
-        item["_id"] = str(item["_id"])
-        result.append(item)
+    for course in courses_collection.find():
+        course["_id"] = str(course["_id"]) 
+        courses.append(course)
 
-    return result
+    return courses
 
-# -------------------------------------------------
-# ✅ GET BY ID
-# -------------------------------------------------
-@router.get("/{department}/{id}")
-def get_data_by_id(department: str, id: str):
-    department = department.lower()
-    _id = validate_object_id(id)
 
-    if department not in COLLECTION_MAP:
-        raise HTTPException(status_code=400, detail="Invalid department ❌")
+@router.post("/trainers")
+def create_Trainer(Trainer: Trainer):
+    result = Trainer_collection.insert_one(Trainer.model_dump())
 
-    data = COLLECTION_MAP[department].find_one({"_id": _id})
+    return {
+        "message": "Trainer added successfully",
+        "id": str(result.inserted_id)
+    }
+    
+@router.get("/trainers")
+def get_Trainer():
+    trainers = []
+
+    for trainer in Trainer_collection.find():
+        trainer["_id"] = str(trainer["_id"]) 
+        trainers.append(trainer)
+
+    return trainers   
+
+@router.post("/placements")
+def create_placement(placement: Placement):
+    result = placement_collection.insert_one(placement.model_dump())
+
+    return {
+        "message": "Placement added successfully",
+        "id": str(result.inserted_id)
+    }
+
+@router.get("/placements")
+def get_placements():
+    placements = []
+
+    for placement in placement_collection.find():
+        placement["_id"] = str(placement["_id"])
+        placements.append(placement)
+
+    return placements 
+
+
+
+
+@router.post("/startup")
+def submit_startup(startup: StartupApplication):
+    data = startup.model_dump()
+
+    result = profile_collection.insert_one(data)
+
+    return {
+        "message": "Startup application submitted successfully",
+        "id": str(result.inserted_id)
+    }
+
+
+@router.get("/startup")
+def get_startup_by_email(email: str):
+    data = profile_collection.find_one({"email": email}, {"_id": 0})
     if not data:
-        raise HTTPException(status_code=404, detail="Data not found ❌")
-
-    data["_id"] = str(data["_id"])
+        raise HTTPException(status_code=404, detail="Startup not found")
     return data
 
-# -------------------------------------------------
-# ✅ UPDATE
-# -------------------------------------------------
-@router.put("/{department}/{id}")
-def update_data(department: str, id: str, data: dict):
-    department = department.lower()
-    _id = validate_object_id(id)
+@router.put("/startup")
+def update_startup(data: StartupApplication):
+    result = profile_collection.update_one(
+        {"email": data.email},
+        {"$set": data.model_dump()}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Startup not found")
+    return {"message": "Updated successfully"}
 
-    if department not in COLLECTION_MAP:
-        raise HTTPException(status_code=400, detail="Invalid department ❌")
-
-    try:
-        model = MODEL_MAP[department](**data)
-    except Exception as e:
-        raise HTTPException(status_code=422, detail=str(e))
-
-    result = COLLECTION_MAP[department].update_one(
-        {"_id": _id},
-        {"$set": model.model_dump()}
+@router.post("/certificates")
+def create_certificate(certificate: Certificate):
+    result = certificates_collection.insert_one(
+        certificate.model_dump()
     )
 
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Data not found ❌")
+    return {
+        "message": "Certificate added successfully",
+        "id": str(result.inserted_id)
+    }
 
-    return {"message": "Data updated successfully ✅"}
 
-# -------------------------------------------------
-# ✅ DELETE
-# -------------------------------------------------
-@router.delete("/{department}/{id}")
-def delete_data(department: str, id: str):
-    department = department.lower()
-    _id = validate_object_id(id)
 
-    if department not in COLLECTION_MAP:
-        raise HTTPException(status_code=400, detail="Invalid department ❌")
+@router.get("/certificates")
+def get_certificates():
+    certificates = []
 
-    result = COLLECTION_MAP[department].delete_one({"_id": _id})
+    for cert in certificates_collection.find():
+        cert["_id"] = str(cert["_id"])
+        certificates.append(cert)
 
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Data not found ❌")
-
-    return {"message": "Data deleted successfully ✅"}
+    return certificates
