@@ -11,6 +11,7 @@ class Trainer(BaseModel):
     courses: int
     
     
+    
 class Courses(BaseModel):
     name: str
     category: str
