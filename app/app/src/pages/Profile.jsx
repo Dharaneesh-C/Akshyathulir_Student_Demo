@@ -147,9 +147,8 @@ function App() {
 
   const [errors, setErrors] = useState({});
   const [countryList, setCountryList] = useState([]);
-  const [addressArrays, setAddressArrays] = useState({
-    0: { states: [], districts: [], cities: [] },
-  });
+  const [addressArrays, setAddressArrays] = useState({});
+
   const [isLoading, setIsLoading] = useState({
     countries: false,
     states: false,
@@ -159,41 +158,40 @@ function App() {
   });
 
   const handleDelete = async () => {
-  if (!formData.email) {
-    alert("Email not found");
-    return;
-  }
+    if (!formData.email) {
+      alert("Email not found");
+      return;
+    }
 
-  const confirmDelete = window.confirm(
-    "Are you sure you want to delete this startup application?"
-  );
-
-  if (!confirmDelete) return;
-
-  try {
-    const response = await Api.delete(
-      `/startup/${encodeURIComponent(formData.email)}`
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this startup application?",
     );
 
-    if (response.status === 200) {
-      alert("Startup deleted successfully");
+    if (!confirmDelete) return;
 
-      // cleanup
-      localStorage.removeItem("userEmail");
-      setIsEditMode(false);
+    try {
+      const response = await Api.delete(
+        `/startup/${encodeURIComponent(formData.email)}`,
+      );
 
-      // redirect or reset
-      window.location.href = "/";
+      if (response.status === 200) {
+        alert("Startup deleted successfully");
+
+        // cleanup
+        localStorage.removeItem("userEmail");
+        setIsEditMode(false);
+
+        // redirect or reset
+        window.location.href = "/";
+      }
+    } catch (error) {
+      if (error.response?.status === 404) {
+        alert("Startup not found");
+      } else {
+        alert("Failed to delete startup. Try again.");
+      }
     }
-  } catch (error) {
-    if (error.response?.status === 404) {
-      alert("Startup not found");
-    } else {
-      alert("Failed to delete startup. Try again.");
-    }
-  }
-};
-
+  };
 
   // --- API: FETCH COUNTRY LIST ON LOAD ---
   useEffect(() => {
@@ -226,10 +224,6 @@ function App() {
       }));
     }
   }, []);
-
-
-
-
 
   useEffect(() => {
     if (!formData.email) return;
@@ -289,7 +283,13 @@ function App() {
                   pinCode: addr.pinCode || "",
                   isPrimary: addr.isPrimary ?? index === 0,
                 }))
-              : data.country || data.state || data.district || data.city || data.area || data.pinCode || data.address
+              : data.country ||
+                  data.state ||
+                  data.district ||
+                  data.city ||
+                  data.area ||
+                  data.pinCode ||
+                  data.address
                 ? [
                     {
                       fullAddress: data.address || "",
@@ -350,8 +350,6 @@ function App() {
           trainingType: data.trainingType || [],
           fypOffered: data.fypOffered || "",
         }));
-      
-
 
         setErrors((prev) => ({ ...prev, email: "" }));
       } catch (error) {
@@ -370,48 +368,23 @@ function App() {
     fetchCompanyByEmail();
   }, [formData.email]);
   useEffect(() => {
-  const loadAddressHierarchy = async () => {
-    for (let i = 0; i < formData.branchAddresses.length; i++) {
-      const addr = formData.branchAddresses[i];
-      if (!addr.country) continue;
-
-      // Fetch states
-      const stateRes = await axios.post(
-        "https://countriesnow.space/api/v0.1/countries/states",
-        { country: addr.country }
-      );
-
-      const states = stateRes.data.data?.states?.map(s => s.name) || [];
-
-      // Fetch cities if state exists
-      let cities = [];
-      if (addr.country === "India" && addr.district) {
-        const cityRes = await axios.get(
-          `https://api.postalpincode.in/postoffice/${addr.district}`
+    const fetchCountries = async () => {
+      setIsLoading((prev) => ({ ...prev, countries: true }));
+      try {
+        const response = await fetch(
+          "https://countriesnow.space/api/v0.1/countries/iso",
         );
-        cities =
-          cityRes.data?.[0]?.PostOffice?.map(po => ({
-            name: po.Name,
-            pin: po.Pincode,
-          })) || [];
+        const data = await response.json();
+        if (data.data) {
+          setCountryList(data.data.map((c) => c.name).sort());
+        }
+      } catch (error) {
+        console.error(error);
       }
-
-      setAddressArrays(prev => ({
-        ...prev,
-        [i]: {
-          states,
-          districts: addr.state ? states : [],
-          cities,
-        },
-      }));
-    }
-  };
-
-  if (formData.branchAddresses.length) {
-    loadAddressHierarchy();
-  }
-}, [formData.branchAddresses]);
-
+      setIsLoading((prev) => ({ ...prev, countries: false }));
+    };
+    fetchCountries();
+  }, []);
 
   // --- LOGIC: SET PRIMARY/MAIN ADDRESS ---
   const handleSetMainAddress = (index) => {
@@ -472,115 +445,121 @@ function App() {
   };
 
   // --- API: HANDLE COUNTRY SELECTION ---
-const handleCountryChange = useCallback(async (index, event) => {
-  const selectedCountry = event.target.value;
+  const handleCountryChange = useCallback(
+    async (index, event) => {
+      const selectedCountry = event.target.value;
 
-  const updatedAddresses = [...formData.branchAddresses];
-  updatedAddresses[index] = {
-    ...updatedAddresses[index],
-    country: selectedCountry,
-    state: "",
-    district: "",
-    city: "",
-    pinCode: "",
-  };
+      const updatedAddresses = [...formData.branchAddresses];
+      updatedAddresses[index] = {
+        ...updatedAddresses[index],
+        country: selectedCountry,
+        state: "",
+        district: "",
+        city: "",
+        pinCode: "",
+      };
 
-  setFormData((prev) => ({ ...prev, branchAddresses: updatedAddresses }));
+      setFormData((prev) => ({ ...prev, branchAddresses: updatedAddresses }));
 
-  setAddressArrays((prev) => ({
-    ...prev,
-    [index]: { states: [], districts: [], cities: [] },
-  }));
-
-  if (selectedCountry) {
-    const response = await axios.post(
-      "https://countriesnow.space/api/v0.1/countries/states",
-      { country: selectedCountry }
-    );
-
-    if (response.data.data?.states) {
       setAddressArrays((prev) => ({
         ...prev,
-        [index]: {
-          ...prev[index],
-          states: response.data.data.states.map((s) => s.name),
-        },
+        [index]: { states: [], districts: [], cities: [] },
       }));
-    }
-  }
-}, [formData.branchAddresses]);
 
+      if (selectedCountry) {
+        const response = await axios.post(
+          "https://countriesnow.space/api/v0.1/countries/states",
+          { country: selectedCountry },
+        );
 
-
-  // --- API: HANDLE STATE SELECTION ---
- const handleStateChange = useCallback(async (index, event) => {
-  const selectedState = event.target.value;
-  const country = formData.branchAddresses[index].country;
-
-  const updatedAddresses = [...formData.branchAddresses];
-  updatedAddresses[index] = {
-    ...updatedAddresses[index],
-    state: selectedState,
-    district: "",
-    city: "",
-    pinCode: "",
-  };
-
-  setFormData((prev) => ({ ...prev, branchAddresses: updatedAddresses }));
-
-  if (selectedState && country) {
-    const response = await axios.post(
-      "https://countriesnow.space/api/v0.1/countries/state/cities",
-      { country, state: selectedState }
-    );
-
-    setAddressArrays((prev) => ({
-      ...prev,
-      [index]: {
-        ...prev[index],
-        districts: response.data.data || [],
-      },
-    }));
-  }
-}, [formData.branchAddresses]);
-
-
-
-  // --- API: HANDLE DISTRICT SELECTION ---
- const handleDistrictChange = useCallback(async (index, event) => {
-  const district = event.target.value;
-
-  const updatedAddresses = [...formData.branchAddresses];
-  updatedAddresses[index] = {
-    ...updatedAddresses[index],
-    district,
-    city: "",
-    pinCode: "",
-  };
-
-  setFormData((prev) => ({ ...prev, branchAddresses: updatedAddresses }));
-
-  const response = await axios.get(
-    `https://api.postalpincode.in/postoffice/${district}`
+        setAddressArrays((prev) => ({
+          ...prev,
+          [index]: {
+            ...prev[index],
+            states: response.data.data?.states?.map((s) => s.name) || [],
+          },
+        }));
+      }
+    },
+    [formData.branchAddresses],
   );
 
-  if (response.data?.[0]?.PostOffice) {
-    const cities = response.data[0].PostOffice.map((po) => ({
-      name: po.Name,
-      pin: po.Pincode,
-    }));
+  // --- API: HANDLE STATE SELECTION ---
+  const handleStateChange = useCallback(
+    async (index, event) => {
+      const selectedState = event.target.value;
+      const country = formData.branchAddresses[index].country;
 
-    setAddressArrays((prev) => ({
-      ...prev,
-      [index]: {
-        ...prev[index],
-        cities,
-      },
-    }));
-  }
-}, [formData.branchAddresses]);
+      const updatedAddresses = [...formData.branchAddresses];
+      updatedAddresses[index] = {
+        ...updatedAddresses[index],
+        state: selectedState,
+        district: "",
+        city: "",
+        pinCode: "",
+      };
 
+      setFormData((prev) => ({ ...prev, branchAddresses: updatedAddresses }));
 
+      if (selectedState && country) {
+        const response = await axios.post(
+          "https://countriesnow.space/api/v0.1/countries/state/cities",
+          { country, state: selectedState },
+        );
+
+        setAddressArrays((prev) => ({
+          ...prev,
+          [index]: {
+            ...prev[index],
+            districts: response.data.data || [],
+          },
+        }));
+      }
+    },
+    [formData.branchAddresses],
+  );
+
+  // --- API: HANDLE DISTRICT SELECTION ---
+  const handleDistrictChange = async (index, event) => {
+    const selectedDistrict = event.target.value;
+    const currentCountry = formData.branchAddresses[index].country;
+    const updatedAddresses = [...formData.branchAddresses];
+    updatedAddresses[index] = {
+      ...updatedAddresses[index],
+      district: selectedDistrict,
+      city: "",
+      pinCode: "",
+    };
+    setFormData({ ...formData, branchAddresses: updatedAddresses });
+    if (selectedDistrict && currentCountry === "India") {
+      setIsLoading((prev) => ({ ...prev, cities: true }));
+      try {
+        const response = await axios.get(
+          `https://api.postalpincode.in/postoffice/${selectedDistrict}`,
+        );
+        if (response.data?.[0]?.PostOffice) {
+          const uniqueCities = [
+            ...new Set(
+              response.data[0].PostOffice.map((po) => ({
+                name: po.Name,
+                pin: po.Pincode,
+              })),
+            ),
+          ];
+          setAddressArrays((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              cities: uniqueCities.sort((a, b) => a.name.localeCompare(b.name)),
+            },
+          }));
+        }
+      } catch (error) {
+        console.error(error);
+      }
+      setIsLoading((prev) => ({ ...prev, cities: false }));
+    }
+  };
 
   // --- LOGIC: HANDLE CITY CHANGE ---
   const handleCityChange = (index, event) => {
@@ -596,8 +575,6 @@ const handleCountryChange = useCallback(async (index, event) => {
     };
     setFormData({ ...formData, branchAddresses: updatedAddresses });
   };
-
-  
 
   // --- LOGIC: INPUT CHANGE HANDLER ---
   const handleInputChange = (field) => (event) => {
@@ -955,11 +932,12 @@ const handleCountryChange = useCallback(async (index, event) => {
 
         {/* --- SECTION: BRANCH ADDRESSES --- */}
         {formData.branchAddresses.map((address, index) => {
-          const currentLists = addressArrays[index] || {
-            states: [],
-            districts: [],
-            cities: [],
+          const currentLists = {
+            states: addressArrays[index]?.states || [],
+            districts: addressArrays[index]?.districts || [],
+            cities: addressArrays[index]?.cities || [],
           };
+
           return (
             <Card key={index} sx={{ mb: 3, border: "2px solid #1f4d3a" }}>
               <Box
@@ -1016,7 +994,11 @@ const handleCountryChange = useCallback(async (index, event) => {
                   <TextField
                     select
                     label="State *"
-                    value={address.state}
+                   value={
+    currentLists.states.includes(address.state)
+      ? address.state
+      : ""
+  }
                     onChange={(e) => handleStateChange(index, e)}
                     disabled={!address.country || isLoading.states}
                     error={!!errors[`address_${index}_state`]}
@@ -1033,7 +1015,11 @@ const handleCountryChange = useCallback(async (index, event) => {
                   <TextField
                     select
                     label="District *"
-                    value={address.district}
+                    value={
+    currentLists.districts.includes(address.district)
+      ? address.district
+      : ""
+  }
                     onChange={(e) => handleDistrictChange(index, e)}
                     disabled={!address.state || isLoading.districts}
                     error={!!errors[`address_${index}_district`]}
@@ -1051,13 +1037,15 @@ const handleCountryChange = useCallback(async (index, event) => {
                     <TextField
                       select
                       label="City *"
-                      value={address.city}
+                      value={
+    currentLists.cities.some(c => c.name === address.city)
+      ? address.city
+      : ""
+  }
                       onChange={(e) => handleCityChange(index, e)}
                       disabled={!address.district || isLoading.cities}
-                      error={!!errors[`address_${index}_city`]}
-                      helperText={
-                        errors[`address_${index}_city`] ? "Required" : ""
-                      }
+                      error={!!errors[`address_${index}_district`]}
+                      helperText={errors[`address_${index}_district`] || ""}
                     >
                       {currentLists.cities.map((c, i) => (
                         <MenuItem key={`${c.name}-${i}`} value={c.name}>
@@ -1753,12 +1741,11 @@ const handleCountryChange = useCallback(async (index, event) => {
         {/* --- SECTION: SUBMIT BUTTONS --- */}
         <Box sx={{ display: "flex", gap: 2, justifyContent: "center", mt: 4 }}>
           <Button
-            type="button"
             variant="outlined"
-            color={isEditMode ? "warning" : "success"}
+            color={isEditMode ? "error" : "warning"}
             onClick={isEditMode ? handleDelete : handleReset}
           >
-            {isEditMode ? "Reset" : "Delete"}
+            {isEditMode ? "Delete" : "Reset"}
           </Button>
 
           <Button
