@@ -41,6 +41,7 @@ class Placement(BaseModel):
 
 
 class Certificate(BaseModel):
+   
     studentName: str
     course: str
     completionDate: str
@@ -62,6 +63,7 @@ class Address(BaseModel):
 
 class StartupApplication(BaseModel):
     # Personal
+    cin: str
     firstName: str
     lastName: str
     email: EmailStr

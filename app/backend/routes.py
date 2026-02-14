@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Form, HTTPException
+from fastapi import APIRouter, status, HTTPException
 from model import Courses,Trainer,Placement,StartupApplication,Certificate
 from database import courses_collection,Trainer_collection,placement_collection,profile_collection,certificates_collection
 
@@ -79,22 +79,40 @@ def submit_startup(startup: StartupApplication):
     }
 
 
-@router.get("/startup")
+@router.get("/startup/by-email/{email}")
 def get_startup_by_email(email: str):
-    data = profile_collection.find_one({"email": email}, {"_id": 0})
-    if not data:
+    startup = profile_collection.find_one({"email": email})
+
+    if not startup:
         raise HTTPException(status_code=404, detail="Startup not found")
-    return data
+
+    startup["_id"] = str(startup["_id"])
+    return startup
 
 @router.put("/startup")
 def update_startup(data: StartupApplication):
+    update_data = data.model_dump(exclude_unset=True)
+
     result = profile_collection.update_one(
         {"email": data.email},
-        {"$set": data.model_dump()}
+        {"$set": update_data}
     )
+
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Startup not found")
-    return {"message": "Updated successfully"}
+
+    return {"message": "Startup updated successfully"}
+
+@router.delete("/startup/{email}")
+def delete_startup(email: str):
+    result = profile_collection.delete_one({"email": email})
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Startup not found")
+
+    return {"message": "Startup deleted successfully"}
+
+
 
 @router.post("/certificates")
 def create_certificate(certificate: Certificate):
@@ -118,3 +136,4 @@ def get_certificates():
         certificates.append(cert)
 
     return certificates
+
