@@ -12,3 +12,4 @@ placement_collection=db["placement"]
 courses_collection=db["courses"]
 certificates_collection=db["certificates"]
 
+

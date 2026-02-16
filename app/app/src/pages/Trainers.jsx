@@ -127,7 +127,7 @@ const initialTrainerState = {
   phone: "",
   qualification: "",
   location: "",
-  exp: "",
+  exp: "Select experience",
   trained: "",
   courses: "",
   status: "Active",
@@ -141,7 +141,7 @@ function Trainers() {
 
   const [formData, setFormData] = React.useState(initialTrainerState);
 
-  const handleAddTrainer = async () => {
+const handleAddTrainer = async () => {
   try {
     const payload = {
       name: formData.name,
@@ -156,32 +156,35 @@ function Trainers() {
       status: formData.status,
     };
 
-    const res = await Api.post("/trainers", payload);
+    await Api.post("/trainers", payload);
 
-    // ✅ FIX: handle any backend response shape
-    const trainerFromBackend = res.data?.data || res.data;
-
-    const trainerWithInitials = {
-      ...trainerFromBackend,
-      rating: trainerFromBackend.rating ?? 4.5,
+    const formattedTrainer = {
+      name: payload.name,
+      skill: payload.skill,
+      status: payload.status,
+      rating: 4.5,
+      exp: payload.exp,
+      trained: payload.trained,
+      location: payload.location,
+      courses: payload.courses,
       initials:
-        trainerFromBackend.initials ||
-        trainerFromBackend.name
+        payload.name
           ?.split(" ")
           .map((n) => n[0])
-          .join(""),
+          .join("") || "NA",
     };
 
-    setTrainerList((prev) => [...prev, trainerWithInitials]);
+    setTrainerList((prev) => [...prev, formattedTrainer]);
     setOpen(false);
     setFormData(initialTrainerState);
 
     alert("✅ Trainer added successfully!");
   } catch (error) {
-    console.error("Frontend parsing error:", error);
+    console.error("FULL ERROR:", error);
     alert("❌ Error while adding trainer");
   }
 };
+
 
 
 
@@ -191,7 +194,9 @@ function Trainers() {
       ...prev,
       [name]: value,
     }));
+    
   };
+  
 
   return (
     <Box sx={{ p: 4, backgroundColor: "#eef8ee", minHeight: "100vh" }}>
@@ -217,13 +222,13 @@ function Trainers() {
           variant="contained"
           startIcon={<AddIcon />}
           sx={{
-            bgcolor: "#1f4d3a",
+            bgcolor: "#2e7d32",
             px: 3,
             py: 1,
             borderRadius: 2,
             textTransform: "none",
             fontWeight: 600,
-            "&:hover": { bgcolor: "#1f4d3a" },
+            "&:hover": { bgcolor: "#1b5e20" },
           }}
           onClick={() => setOpen(true)}
         >
@@ -244,15 +249,15 @@ function Trainers() {
       {/* Trainer Cards */}
       <Grid container spacing={3}>
         {trainerList.map((t, i) => (
-          <Grid item xs={12} md={4} key={i} sx={{ width: 400 }}>
-            <Card sx={{ borderRadius: 3 }}>
+          <Grid item xs={12} md={4} key={i} sx={{ width: 400,}}>
+            <Card sx={{ borderRadius: 3, height:220 }}>
               <CardContent>
                 {/* Top */}
                 <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
                   <Avatar
                     sx={{
                       bgcolor: "#e6f4ea",
-                      color: "#1f4d3a",
+                      color: "#1b5e20",
                       fontWeight: 700,
                     }}
                   >
@@ -558,8 +563,8 @@ function Trainers() {
             <Button
               variant="contained"
               sx={{
-                bgcolor: "#1f4d3a",
-                "&:hover": { bgcolor: "#1f4d3a" },
+                bgcolor: "#2e7d32",
+                "&:hover": { bgcolor: "#1b5e20" },
               }}
               onClick={handleAddTrainer}
             >
@@ -665,5 +670,3 @@ function Trainers() {
 }
 
 export default Trainers;
-
-

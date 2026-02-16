@@ -16,8 +16,7 @@ import {
   Divider,
 } from "@mui/material";
 
-import { Search, Close, Visibility, Edit, Delete } from "@mui/icons-material";
-import Api from "./api";
+import { Search, Visibility, Edit, Delete } from "@mui/icons-material";
 
 /* -------------------- DATA -------------------- */
 const courses_main = [
@@ -238,70 +237,55 @@ const initialState = {
 };
 
 const Courses = () => {
+  // add course
   const [courses, setCourses] = useState(courses_main);
   const [openAdd, setOpenAdd] = useState(false);
+  const [newCourse, setNewCourse] = useState(initialState);
+
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [newCourse, setNewCourse] = useState(initialState);
-  
-
-
-
-
-
-  
 
   /* -------------------- ADD COURSE -------------------- */
-  
-  const handleAddCourse = async (e) => {
-    e.preventDefault();
+  const handleAddCourse = () => {
+    const newCourseWithId = {
+      ...newCourse,
+      id: `CRS${courses.length + 1}`,
+      status: "Active",
+      enrolled: 0,
+      syllabus: newCourse.syllabus.split(","),
+      outcomes: newCourse.outcomes.split(","),
+    };
 
-    try {
-      setLoading(true);
-
-      const res = await Api.post("/courses", newCourse);
-
-      // Update UI with backend response
-      setCourses((prev) => [...prev, res.data.data]);
-
-      alert("✅ Course Added Successfully!");
-      setOpenAdd(false);
-      setNewCourse(initialState);
-    } catch (err) {
-      console.error(err);
-      alert("❌ Error while adding course");
-    } finally {
-      setLoading(false);
-    }
+    setCourses((prev) => [...prev, newCourseWithId]);
+    setOpenAdd(false);
+    setNewCourse(initialState);
   };
 
- const filteredCourses = courses.filter((c) => {
-  if (!c || !c.name) return false;
+  const filteredCourses = courses.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase()),
+  );
 
-  return `${c.name} ${c.id ?? ""} ${c.trainer ?? ""}`
-    .toLowerCase()
-    .includes(search.toLowerCase());
-});
-
-
+  /* -------------------- DELETE COURSE -------------------- */
+  const handleDeleteCourse = (id) => {
+    const updatedCourses = courses.filter((course) => course.id !== id);
+    setCourses(updatedCourses);
+  };
 
   return (
     <Box p={4}>
       {/* HEADER */}
+      {/* stack arrange the component */}
       <Stack direction="row" justifyContent="space-between" mb={2}>
         <Box>
           <Typography variant="h4" fontWeight="bold">
             Courses
           </Typography>
-          <Typography color="text.secondary">
-            Explore available courses
-          </Typography>
+          <Typography color="gray">Explore available courses</Typography>
         </Box>
 
         <Button
-          variant="outlined"
+          variant="outlined" //border
           onClick={() => setOpenAdd(true)}
           sx={{
             borderColor: "#1f4d3a",
@@ -337,7 +321,13 @@ const Courses = () => {
       {/* COURSE CARDS */}
       <Grid container spacing={3}>
         {filteredCourses.map((course) => (
-          <Grid item xs={12} md={4} key={course.id} sx={{width:300,height:350}}>
+          <Grid
+            item
+            xs={12}
+            md={4}
+            key={course.id}
+            sx={{ width: 300, height: 350 }}
+          >
             <Card
               sx={{
                 borderRadius: 2,
@@ -348,7 +338,7 @@ const Courses = () => {
             >
               <Box
                 sx={{
-                  backgroundColor: "#1f4d3a",
+                  backgroundColor: "#1b5e20",
                   color: "white",
                   p: 2,
                 }}
@@ -412,7 +402,11 @@ const Courses = () => {
                     <IconButton size="small">
                       <Edit fontSize="small" />
                     </IconButton>
-                    <IconButton size="small" sx={{ color: "error.main" }}>
+                    <IconButton
+                      size="small"
+                      sx={{ color: "error.main" }}
+                      onClick={() => handleDeleteCourse(course.id)}
+                    >
                       <Delete fontSize="small" />
                     </IconButton>
                   </Stack>
@@ -423,98 +417,126 @@ const Courses = () => {
         ))}
       </Grid>
 
-      {/* ADD COURSE MODAL */}
+      {/* ADD COURSE DIALOG */}
       <Dialog
         open={openAdd}
         onClose={() => setOpenAdd(false)}
-        maxWidth="sm"
         fullWidth
+        maxWidth="sm"
+        PaperProps={{ sx: { borderRadius: 3 } }}
       >
-        <Box p={3}>
-          <Stack direction="row" justifyContent="space-between" mb={2}>
-            <Typography variant="h6">Add New Course</Typography>
-            <IconButton onClick={() => setOpenAdd(false)}>
-              <Close />
-            </IconButton>
-          </Stack>
+        <Box sx={{ p: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Add Course
+          </Typography>
 
-          <Stack spacing={2}>
-            <TextField
-              label="Course Name"
-              placeholder="eg:FullStack Developer"
-              fullWidth
-              value={newCourse.name}
-              onChange={(e) =>
-                setNewCourse({ ...newCourse, name: e.target.value })
-              }
-            />
+          <Grid container spacing={2}>
+            {/* Row 1 */}
+            <Grid size={6}>
+              <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                Course Name *
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="e.g. Full Stack Development"
+                name="name"
+                value={newCourse.name}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, name: e.target.value })
+                }
+              />
+            </Grid>
 
-            <Grid container spacing={2}>
-              <Grid size={6}>
+            <Grid size={6}>
+              <Grid
+                item
+                xs={12}
+                md={6}
+                sx={{
+                  "& .MuiInputBase-root": { width: 268 },
+                }}
+              >
+                <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                  Category
+                </Typography>
                 <TextField
                   select
-                  label="Category"
                   fullWidth
+                  size="small"
+                  name="category"
                   value={newCourse.category}
                   onChange={(e) =>
                     setNewCourse({ ...newCourse, category: e.target.value })
                   }
                 >
-                  <MenuItem value="IT">IT</MenuItem>
+                  <MenuItem value="IT & Software">IT & Software</MenuItem>
+                  <MenuItem value="Business">Business</MenuItem>
                   <MenuItem value="Design">Design</MenuItem>
-
                   <MenuItem value="Marketing">Marketing</MenuItem>
-                  <MenuItem value="Finance">Finance</MenuItem>
-                  <MenuItem value="Language">Language</MenuItem>
                 </TextField>
               </Grid>
+            </Grid>
 
-              <Grid size={6}>
+            {/* Row 2 */}
+            <Grid size={6}>
+              <Grid
+                item
+                xs={12}
+                md={6}
+                sx={{
+                  "& .MuiInputBase-root": { width: 268 },
+                }}
+              >
+                <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                  Duration *
+                </Typography>
+
                 <TextField
                   select
-                  label="Duration"
-                  placeholder=""
                   fullWidth
+                  size="small"
+                  name="duration"
                   value={newCourse.duration}
                   onChange={(e) =>
                     setNewCourse({ ...newCourse, duration: e.target.value })
                   }
                 >
-                  <MenuItem value="1 month">1 month</MenuItem>
-                  <MenuItem value="2 month">2 month</MenuItem>
-
-                  <MenuItem value="3 month">3 month</MenuItem>
-                  <MenuItem value="4 month">4 month</MenuItem>
-                  <MenuItem value="5 month">5 month</MenuItem>
-                  <MenuItem value="6 month">6 month</MenuItem>
-                  <MenuItem value="12 month">12 month</MenuItem>
+                  <MenuItem value="1 month">1 Month</MenuItem>
+                  <MenuItem value="2 month">2 Months</MenuItem>
+                  <MenuItem value="3 month">3 Months</MenuItem>
+                  <MenuItem value="5 month">5 Months</MenuItem>
+                  <MenuItem value="6 month">6 Months</MenuItem>
                 </TextField>
               </Grid>
-              <Grid size={6}>
-                <TextField
-                  label="Fees"
-                  placeholder="eg:25000"
-                  fullWidth
-                  value={newCourse.fees}
-                  onChange={(e) =>
-                    setNewCourse({ ...newCourse, fees: e.target.value })
-                  }
-                />
-              </Grid>
-              <Grid size={6}>
-                <TextField
-                  label="Start Date"
-                  type="date"
-                  InputLabelProps={{ shrink: true }}
-                  placeholder="DD / MM / YYYY"
-                  fullWidth
-                />
-              </Grid>
+            </Grid>
 
+            <Grid size={6}>
+              <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                Fees *
+              </Typography>
               <TextField
-                label="Trainer"
-                placeholder="Trainer Name"
                 fullWidth
+                size="small"
+                placeholder="e.g. ₹ 25,000"
+                name="fees"
+                value={newCourse.fees}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, fees: e.target.value })
+                }
+              />
+            </Grid>
+
+            {/* Row 3 */}
+            <Grid size={6}>
+              <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                Trainer
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Trainer Name"
+                name="trainer"
                 value={newCourse.trainer}
                 onChange={(e) =>
                   setNewCourse({ ...newCourse, trainer: e.target.value })
@@ -522,34 +544,97 @@ const Courses = () => {
               />
             </Grid>
 
-            <TextField
-              label="Description"
-              placeholder="Course details, benefits "
-              multiline
-              rows={3}
-              fullWidth
-              value={newCourse.description}
-              onChange={(e) =>
-                setNewCourse({ ...newCourse, description: e.target.value })
-              }
-            />
-
-            <Stack direction="row" justifyContent="flex-end" spacing={2}>
-              <Button onClick={() => setOpenAdd(false)}>Cancel</Button>
-              <Button
-                variant="contained"
-                onClick={handleAddCourse}
-                disabled={loading}
+            <Grid size={6}>
+              <Grid
+                item
+                xs={12}
+                md={6}
                 sx={{
-                  backgroundColor: "#1f4d3a",
-                  color: "#fff",
-                  "&:hover": { backgroundColor: "#163d2f" },
+                  "& .MuiInputBase-root": { width: 268 },
                 }}
               >
-                {loading ? "Adding..." : "Add Course"}
+                <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                  Status
+                </Typography>
+                <TextField
+                  select
+                  fullWidth
+                  size="small"
+                  name="status"
+                  value={newCourse.status}
+                  onChange={(e) =>
+                    setNewCourse({ ...newCourse, status: e.target.value })
+                  }
+                >
+                  <MenuItem value="Active">Active</MenuItem>
+                  <MenuItem value="Draft">Draft</MenuItem>
+                  <MenuItem value="Inactive">Inactive</MenuItem>
+                </TextField>
+              </Grid>
+            </Grid>
+
+            {/* Row 4 */}
+            <Grid size={12}>
+              <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                Description
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                multiline
+                rows={3}
+                name="description"
+                value={newCourse.description}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, description: e.target.value })
+                }
+              />
+            </Grid>
+
+            {/* Row 5 */}
+            <Grid size={6}>
+              <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                Syllabus (comma separated)
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                name="syllabus"
+                placeholder="HTML, CSS, React, Node"
+                value={newCourse.syllabus || ""}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, syllabus: e.target.value })
+                }
+              />
+            </Grid>
+
+            <Grid size={6}>
+              <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                Outcomes (comma separated)
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                name="outcomes"
+                placeholder="Build apps, Deploy projects"
+                value={newCourse.outcomes || ""}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, outcomes: e.target.value })
+                }
+              />
+            </Grid>
+
+            {/* Submit Button */}
+            <Grid item xs={12} md={6} textAlign="right">
+              <Button
+                variant="contained"
+                sx={{ backgroundColor: "#1b5e20" }}
+                onClick={handleAddCourse}
+              >
+                Add Course
               </Button>
-            </Stack>
-          </Stack>
+            </Grid>
+          </Grid>
         </Box>
       </Dialog>
 
@@ -557,103 +642,25 @@ const Courses = () => {
       <Dialog
         open={detailsOpen}
         onClose={() => setDetailsOpen(false)}
-        maxWidth="sm"
         fullWidth
       >
         {selectedCourse && (
-          <Box>
-            {/* Header with close button */}
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              sx={{ p: 3, pb: 0 }}
-            >
-              <Typography variant="h6" fontWeight="bold">
-                {selectedCourse.name}
-              </Typography>
-              <IconButton onClick={() => setDetailsOpen(false)} size="small">
-                <Close />
-              </IconButton>
-            </Stack>
+          <Box p={3}>
+            <Typography variant="h6">{selectedCourse.name}</Typography>
 
-            {/* Category and Status Chips */}
-            <Stack direction="row" spacing={1} sx={{ px: 3, pt: 1, pb: 2 }}>
-              <Chip
-                label={selectedCourse.category || "IT & Software"}
-                size="small"
-                sx={{ fontWeight: 600 }}
-              />
-              <Chip
-                label={selectedCourse.status || "Active"}
-                color={
-                  selectedCourse.status === "Active" ? "success" : "default"
-                }
-                size="small"
-              />
-            </Stack>
+            <Divider sx={{ my: 2 }} />
 
-            {/* Divider */}
-            <Divider />
+            <Typography fontWeight="bold">Syllabus</Typography>
+            {selectedCourse.syllabus.map((s, i) => (
+              <Typography key={i}>• {s}</Typography>
+            ))}
 
-            {/* Content */}
-            <Box sx={{ p: 3 }}>
-              {/* Description */}
-              <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                {selectedCourse.description}
-              </Typography>
-
-              {/* Course Details Grid */}
-              <Box
-                sx={{
-                  backgroundColor: "#f5f5f5",
-                  p: 2,
-                  borderRadius: 1,
-                  mb: 3,
-                }}
-              >
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <Typography variant="caption" color="textSecondary">
-                      Duration
-                    </Typography>
-                    <Typography fontWeight="bold">
-                      {selectedCourse.duration}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="caption" color="textSecondary">
-                      Fee
-                    </Typography>
-                    <Typography fontWeight="bold">
-                      {selectedCourse.fees}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="caption" color="textSecondary">
-                      Students
-                    </Typography>
-                    <Typography fontWeight="bold">
-                      {selectedCourse.enrolled}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="caption" color="textSecondary">
-                      Trainer
-                    </Typography> 
-                    <Typography fontWeight="bold">
-                      {selectedCourse.trainer}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="caption" color="textSecondary">
-                      Start Date
-                    </Typography>
-                    <Typography fontWeight="bold">2025-01-15</Typography>
-                  </Grid>
-                </Grid>
-              </Box>
-            </Box>
+            <Typography fontWeight="bold" mt={2}>
+              Outcomes
+            </Typography>
+            {selectedCourse.outcomes.map((o, i) => (
+              <Typography key={i}>• {o}</Typography>
+            ))}
           </Box>
         )}
       </Dialog>

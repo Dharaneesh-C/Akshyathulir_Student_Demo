@@ -73,81 +73,94 @@ const PHONE_COUNTRIES = [
   { name: "Canada", code: "+1", maxLength: 10 },
 ];
 
+const initialFormState = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  linkedin: "",
+  website: "",
+  dateOfBirth: "",
+  gender: "",
+  designation: "",
+  cin: "",
+  startupName: "",
+  legalStatus: "",
+  dateOfEstablishment: "",
+  primarySector: "",
+  companyPAN: "",
+  currentTeamSize: "",
+  maleCount: "",
+  femaleCount: "",
+  gstin: "",
+  companyWebsite: "",
+  numberOfBranches: "1",
+  branchAddresses: [
+    {
+      fullAddress: "",
+      country: "",
+      state: "",
+      district: "",
+      city: "",
+      area: "",
+      pinCode: "",
+      isPrimary: true,
+    },
+  ],
+  founderEmail: "",
+  founderFirstName: "",
+  founderLastName: "",
+  founderPhoneCountry: "India",
+  founderPhoneCode: "+91",
+  founderPhone: "",
+  founderDOB: "",
+  founderGender: "",
+  founderLinkedIn: "",
+  founderFacebook: "",
+  fundingNeeded: "",
+  mentorshipNeeded: "",
+  technologySupport: "",
+  incubationSpace: "",
+  registrationNeeded: "",
+  supportInterest: "",
+  governmentSchemes: "",
+  secondarySector: "",
+  placementOffered: "",
+  placementType: "",
+  internshipOffered: "",
+  internshipType: "",
+  trainingOffered: "",
+  trainingType: [],
+  fypOffered: "",
+  phoneCountry: "India",
+  phoneCode: "+91",
+  phone: "",
+};
+const initialAddress = {
+  fullAddress: "",
+  country: "",
+  state: "",
+  district: "",
+  city: "",
+  area: "",
+  pinCode: "",
+  isPrimary: false,
+};
+
 function App() {
   // --- DATE CALCULATIONS ---
   const today = new Date().toISOString().split("T")[0];
   const [isEditMode, setIsEditMode] = useState(false);
+  const [formData, setFormData] = useState(initialFormState);
   const d = new Date();
   d.setFullYear(d.getFullYear() - 2);
   const twoYearsAgo = d.toISOString().split("T")[0];
 
-  // --- INITIAL DATA STRUCTURES ---
-  const initialAddress = {
-    fullAddress: "",
-    country: "",
-    state: "",
-    district: "",
-    city: "",
-    area: "",
-    pinCode: "",
-    isPrimary: false,
-  };
-
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    linkedin: "",
-    website: "",
-    dateOfBirth: "",
-    gender: "",
-    designation: "",
-    cin: "",
-    startupName: "",
-    legalStatus: "",
-    dateOfEstablishment: "",
-    primarySector: "",
-    companyPAN: "",
-    currentTeamSize: "",
-    maleCount: "",
-    femaleCount: "",
-    gstin: "",
-    companyWebsite: "",
-    numberOfBranches: "1",
-    branchAddresses: [{ ...initialAddress, isPrimary: true }],
-    founderEmail: "",
-    founderFirstName: "",
-    founderLastName: "",
-    founderPhoneCountry: "India",
-    founderPhoneCode: "+91",
-    founderPhone: "",
-    founderDOB: "",
-    founderGender: "",
-    founderLinkedIn: "",
-    founderFacebook: "",
-    fundingNeeded: "",
-    mentorshipNeeded: "",
-    technologySupport: "",
-    incubationSpace: "",
-    registrationNeeded: "",
-    supportInterest: "",
-    governmentSchemes: "",
-    secondarySector: "",
-    placementOffered: "",
-    placementType: "",
-    internshipOffered: "",
-    internshipType: "",
-    trainingOffered: "",
-    trainingType: [],
-    fypOffered: "",
-    phoneCountry: "India",
-    phoneCode: "+91",
-    phone: "",
-  });
-
   const [errors, setErrors] = useState({});
   const [countryList, setCountryList] = useState([]);
   const [addressArrays, setAddressArrays] = useState({});
+  const [originalData, setOriginalData] = useState(null);
+
+  const [isEditable, setIsEditable] = useState(false);
 
   const [isLoading, setIsLoading] = useState({
     countries: false,
@@ -155,63 +168,66 @@ function App() {
     districts: false,
     cities: false,
     cin: false,
+    email: false,
   });
 
-  const handleDelete = async () => {
-    if (!formData.email) {
-      alert("Email not found");
-      return;
+  const preloadAddressDropdowns = async (addresses) => {
+    const newAddressArrays = {};
+
+    for (let i = 0; i < addresses.length; i++) {
+      const addr = addresses[i];
+      newAddressArrays[i] = { states: [], districts: [], cities: [] };
+
+      if (addr.country) {
+        const statesRes = await axios.post(
+          "https://countriesnow.space/api/v0.1/countries/states",
+          { country: addr.country },
+        );
+        newAddressArrays[i].states =
+          statesRes.data.data?.states?.map((s) => s.name) || [];
+      }
+
+      if (addr.country && addr.state) {
+        const districtRes = await axios.post(
+          "https://countriesnow.space/api/v0.1/countries/state/cities",
+          { country: addr.country, state: addr.state },
+        );
+        newAddressArrays[i].districts = districtRes.data.data || [];
+      }
+
+      if (addr.country === "India" && addr.district) {
+        const cityRes = await axios.get(
+          `https://api.postalpincode.in/postoffice/${addr.district}`,
+        );
+        if (cityRes.data?.[0]?.PostOffice) {
+          newAddressArrays[i].cities = cityRes.data[0].PostOffice.map((po) => ({
+            name: po.Name,
+            pin: po.Pincode,
+          }));
+        }
+      }
     }
 
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this startup application?",
-    );
+    setAddressArrays(newAddressArrays);
+  };
 
-    if (!confirmDelete) return;
+  const handleReset = () => {
+    localStorage.removeItem("userEmail");
+    setFormData(initialFormState);
+    setErrors({});
+    setIsEditMode(false);
+    setIsEditable(true);
+  };
 
-    try {
-      const response = await Api.delete(
-        `/startup/${encodeURIComponent(formData.email)}`,
-      );
-
-      if (response.status === 200) {
-        alert("Startup deleted successfully");
-
-        // cleanup
-        localStorage.removeItem("userEmail");
-        setIsEditMode(false);
-
-        // redirect or reset
-        window.location.href = "/";
-      }
-    } catch (error) {
-      if (error.response?.status === 404) {
-        alert("Startup not found");
-      } else {
-        alert("Failed to delete startup. Try again.");
-      }
+  const handleCancelEdit = () => {
+    if (originalData) {
+      setFormData(originalData);
     }
+    setErrors({});
+    setIsEditable(false);
   };
 
   // --- API: FETCH COUNTRY LIST ON LOAD ---
-  useEffect(() => {
-    const fetchCountries = async () => {
-      setIsLoading((prev) => ({ ...prev, countries: true }));
-      try {
-        const response = await fetch(
-          "https://countriesnow.space/api/v0.1/countries/iso",
-        );
-        const data = await response.json();
-        if (data.data) {
-          setCountryList(data.data.map((c) => c.name).sort());
-        }
-      } catch (error) {
-        console.error(error);
-      }
-      setIsLoading((prev) => ({ ...prev, countries: false }));
-    };
-    fetchCountries();
-  }, []);
 
   // --- API: FETCH COMPANY DETAILS VIA PERSONAL EMAIL ---
   useEffect(() => {
@@ -238,6 +254,8 @@ function App() {
         );
 
         const data = response.data;
+        setIsEditMode(true); // record exists
+        setIsEditable(false); // initially view-only
 
         setFormData((prev) => ({
           ...prev,
@@ -350,6 +368,7 @@ function App() {
           trainingType: data.trainingType || [],
           fypOffered: data.fypOffered || "",
         }));
+        await preloadAddressDropdowns(data.branchAddresses || []);
 
         setErrors((prev) => ({ ...prev, email: "" }));
       } catch (error) {
@@ -420,7 +439,7 @@ function App() {
     const updatedAddresses = [...formData.branchAddresses];
     if (count > updatedAddresses.length) {
       for (let i = updatedAddresses.length; i < count; i++) {
-        updatedAddresses.push({ ...initialAddress, isPrimary: false });
+        updatedAddresses.push({ ...initialAddress });
       }
     } else if (count < updatedAddresses.length) {
       const removedPrimary = updatedAddresses
@@ -622,8 +641,6 @@ function App() {
     }));
   };
 
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
   const validateForm = () => {
     let tempErrors = {};
     let isValid = true;
@@ -641,7 +658,7 @@ function App() {
     checkRequired("dateOfBirth", "Date of Birth");
     checkRequired("gender", "Gender");
     checkRequired("designation", "Designation");
-    if (formData.email && !emailRegex.test(formData.email)) {
+    if (formData.email && !EMAIL_REGEX.test(formData.email)) {
       tempErrors.email = "Enter a valid email address";
       isValid = false;
     }
@@ -722,8 +739,8 @@ function App() {
       };
 
       const response = isEditMode
-        ? await Api.put("/startup", payload) // ✅ UPDATE
-        : await Api.post("/startup", payload); // ✅ CREATE
+        ? await Api.put("/startup", payload)
+        : await Api.post("/startup", payload);
 
       if (response.status === 200 || response.status === 201) {
         localStorage.setItem("userEmail", formData.email);
@@ -734,10 +751,6 @@ function App() {
     } catch (error) {
       alert("Server error. Please try again.");
     }
-  };
-
-  const handleReset = () => {
-    window.location.reload();
   };
 
   return (
@@ -751,6 +764,32 @@ function App() {
         >
           Training Institute Form
         </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          {isEditMode && !isEditable && (
+            <Button
+              variant="contained"
+              sx={{
+                backgroundColor: "#1f4d3a",
+                "&:hover": {
+                  backgroundColor: "#173b2d",
+                },
+              }}
+              onClick={() => {
+                setOriginalData(JSON.parse(JSON.stringify(formData)));
+                setIsEditable(true);
+              }}
+            >
+              Edit
+            </Button>
+          )}
+        </Box>
 
         {/* --- SECTION: COMPANY DETAILS --- */}
         <Card sx={{ mb: 3, border: "2px solid #1f4d3a" }}>
@@ -767,6 +806,7 @@ function App() {
               <TextField
                 label="CIN (Corporate Identification Number)"
                 value={formData.cin}
+                disabled={isEditMode && !isEditable}
                 error={!!errors.cin}
                 helperText={errors.cin}
                 onChange={(e) =>
@@ -786,6 +826,7 @@ function App() {
               <TextField
                 label="Startup Name *"
                 value={formData.startupName}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("startupName")}
                 error={!!errors.startupName}
                 helperText={errors.startupName}
@@ -794,6 +835,7 @@ function App() {
               <TextField
                 label="GSTIN *"
                 value={formData.gstin}
+                disabled={isEditMode && !isEditable}
                 onChange={(e) =>
                   handleInputChange("gstin")({
                     target: { value: e.target.value.toUpperCase() },
@@ -807,6 +849,7 @@ function App() {
               <TextField
                 label="Company PAN *"
                 value={formData.companyPAN}
+                disabled={isEditMode && !isEditable}
                 onChange={(e) =>
                   handleInputChange("companyPAN")({
                     target: { value: e.target.value.toUpperCase() },
@@ -824,6 +867,7 @@ function App() {
                 select
                 label="Legal Status *"
                 value={formData.legalStatus}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("legalStatus")}
                 error={!!errors.legalStatus}
                 helperText={errors.legalStatus}
@@ -839,6 +883,7 @@ function App() {
                 label="Date of Establishment *"
                 type="date"
                 value={formData.dateOfEstablishment}
+                disabled={isEditMode && !isEditable}
                 InputLabelProps={{ shrink: true }}
                 onChange={handleInputChange("dateOfEstablishment")}
                 error={!!errors.dateOfEstablishment}
@@ -851,6 +896,7 @@ function App() {
                 select
                 label="Primary Sector *"
                 value={formData.primarySector}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("primarySector")}
                 error={!!errors.primarySector}
                 helperText={errors.primarySector}
@@ -870,6 +916,7 @@ function App() {
                 select
                 label="Secondary Sector"
                 value={formData.secondarySector}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("secondarySector")}
                 helperText="Optional focus area"
               >
@@ -886,6 +933,7 @@ function App() {
                 label="Current Team Size *"
                 type="number"
                 value={formData.currentTeamSize}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("currentTeamSize")}
                 placeholder="Total Employees Excl. Founders"
                 error={!!errors.currentTeamSize}
@@ -895,6 +943,7 @@ function App() {
                 label="Male Employees *"
                 type="number"
                 value={formData.maleCount}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("maleCount")}
                 error={!!errors.maleCount}
                 helperText={errors.maleCount}
@@ -905,6 +954,7 @@ function App() {
                 label="Female Employees *"
                 type="number"
                 value={formData.femaleCount}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("femaleCount")}
                 error={!!errors.femaleCount}
                 helperText={errors.femaleCount}
@@ -915,6 +965,7 @@ function App() {
                 label="Number of Branches *"
                 type="number"
                 value={formData.numberOfBranches}
+                disabled={isEditMode && !isEditable}
                 onChange={handleBranchCountChange}
                 error={!!errors.numberOfBranches}
                 helperText={errors.numberOfBranches}
@@ -923,6 +974,7 @@ function App() {
               <TextField
                 label="Company Website"
                 value={formData.companyWebsite}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("companyWebsite")}
                 placeholder="Ex: https://www.startup.com"
               />
@@ -979,7 +1031,9 @@ function App() {
                     label="Country *"
                     value={address.country}
                     onChange={(e) => handleCountryChange(index, e)}
-                    disabled={isLoading.countries}
+                    disabled={
+                      (isEditMode && !isEditable) || isLoading.countries
+                    }
                     error={!!errors[`address_${index}_country`]}
                     helperText={
                       errors[`address_${index}_country`] ? "Required" : ""
@@ -994,13 +1048,17 @@ function App() {
                   <TextField
                     select
                     label="State *"
-                   value={
-    currentLists.states.includes(address.state)
-      ? address.state
-      : ""
-  }
+                    value={
+                      currentLists.states.includes(address.state)
+                        ? address.state
+                        : ""
+                    }
                     onChange={(e) => handleStateChange(index, e)}
-                    disabled={!address.country || isLoading.states}
+                    disabled={
+                      (isEditMode && !isEditable) ||
+                      !address.country ||
+                      isLoading.states
+                    }
                     error={!!errors[`address_${index}_state`]}
                     helperText={
                       errors[`address_${index}_state`] ? "Required" : ""
@@ -1016,12 +1074,16 @@ function App() {
                     select
                     label="District *"
                     value={
-    currentLists.districts.includes(address.district)
-      ? address.district
-      : ""
-  }
+                      currentLists.districts.includes(address.district)
+                        ? address.district
+                        : ""
+                    }
                     onChange={(e) => handleDistrictChange(index, e)}
-                    disabled={!address.state || isLoading.districts}
+                    disabled={
+                      (isEditMode && !isEditable) ||
+                      !address.state ||
+                      isLoading.districts
+                    }
                     error={!!errors[`address_${index}_district`]}
                     helperText={
                       errors[`address_${index}_district`] ? "Required" : ""
@@ -1038,14 +1100,18 @@ function App() {
                       select
                       label="City *"
                       value={
-    currentLists.cities.some(c => c.name === address.city)
-      ? address.city
-      : ""
-  }
+                        currentLists.cities.some((c) => c.name === address.city)
+                          ? address.city
+                          : ""
+                      }
                       onChange={(e) => handleCityChange(index, e)}
-                      disabled={!address.district || isLoading.cities}
-                      error={!!errors[`address_${index}_district`]}
-                      helperText={errors[`address_${index}_district`] || ""}
+                      disabled={
+                        (isEditMode && !isEditable) ||
+                        !address.district ||
+                        isLoading.cities
+                      }
+                      error={!!errors[`address_${index}_city`]}
+                      helperText={errors[`address_${index}_city`] || ""}
                     >
                       {currentLists.cities.map((c, i) => (
                         <MenuItem key={`${c.name}-${i}`} value={c.name}>
@@ -1057,6 +1123,7 @@ function App() {
                     <TextField
                       label="City *"
                       value={address.city}
+                      disabled={isEditMode && !isEditable}
                       onChange={(e) =>
                         handleAddressFieldChange(index, "city", e.target.value)
                       }
@@ -1072,6 +1139,7 @@ function App() {
                   <TextField
                     label="Area / Locality *"
                     value={address.area}
+                    disabled={isEditMode && !isEditable}
                     onChange={(e) =>
                       handleAddressFieldChange(index, "area", e.target.value)
                     }
@@ -1086,6 +1154,7 @@ function App() {
                   <TextField
                     label="Pin Code *"
                     value={address.pinCode}
+                    disabled={isEditMode && !isEditable}
                     onChange={(e) =>
                       handleAddressFieldChange(index, "pinCode", e.target.value)
                     }
@@ -1102,6 +1171,7 @@ function App() {
                     multiline
                     rows={2}
                     value={address.fullAddress}
+                    disabled={isEditMode && !isEditable}
                     onChange={(e) =>
                       handleAddressFieldChange(
                         index,
@@ -1138,6 +1208,7 @@ function App() {
               <TextField
                 label="First Name *"
                 value={formData.firstName}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("firstName")}
                 error={!!errors.firstName}
                 helperText={errors.firstName}
@@ -1146,6 +1217,7 @@ function App() {
               <TextField
                 label="Last Name *"
                 value={formData.lastName}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("lastName")}
                 error={!!errors.lastName}
                 helperText={errors.lastName}
@@ -1155,10 +1227,11 @@ function App() {
                 label="Email Address *"
                 type="email"
                 value={formData.email}
+                disabled={isEditMode}
                 onChange={(e) => {
                   const val = e.target.value;
                   handleInputChange("email")(e);
-                  if (val && !emailRegex.test(val))
+                  if (val && !EMAIL_REGEX.test(val))
                     setErrors((prev) => ({
                       ...prev,
                       email: "Enter a valid email address",
@@ -1173,6 +1246,7 @@ function App() {
               <TextField
                 label="Phone Number *"
                 value={formData.phone}
+                disabled={isEditMode && !isEditable}
                 onChange={(e) =>
                   setFormData((p) => ({
                     ...p,
@@ -1188,6 +1262,7 @@ function App() {
                     <InputAdornment position="start">
                       <Select
                         value={formData.phoneCountry}
+                        disabled={isEditMode && !isEditable}
                         onChange={handlePhoneCountryChange}
                         variant="standard"
                         disableUnderline
@@ -1205,6 +1280,7 @@ function App() {
               <TextField
                 label="LinkedIn Profile URL"
                 value={formData.linkedin}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("linkedin")}
                 placeholder="Ex: https://linkedin.com/in/username"
               />
@@ -1212,6 +1288,7 @@ function App() {
                 label="Date of Birth *"
                 type="date"
                 value={formData.dateOfBirth}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("dateOfBirth")}
                 InputLabelProps={{ shrink: true }}
                 error={!!errors.dateOfBirth}
@@ -1223,6 +1300,7 @@ function App() {
               <TextField
                 label="Designation *"
                 value={formData.designation}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("designation")}
                 error={!!errors.designation}
                 helperText={errors.designation}
@@ -1240,16 +1318,19 @@ function App() {
                 >
                   <FormControlLabel
                     value="Male"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Male"
                   />
                   <FormControlLabel
                     value="Female"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Female"
                   />
                   <FormControlLabel
                     value="Others"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Others"
                   />
@@ -1277,6 +1358,7 @@ function App() {
               <TextField
                 label="Founder First Name *"
                 value={formData.founderFirstName}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("founderFirstName")}
                 error={!!errors.founderFirstName}
                 helperText={errors.founderFirstName}
@@ -1285,6 +1367,7 @@ function App() {
               <TextField
                 label="Founder Last Name *"
                 value={formData.founderLastName}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("founderLastName")}
                 error={!!errors.founderLastName}
                 helperText={errors.founderLastName}
@@ -1294,10 +1377,11 @@ function App() {
                 label="Founder Email *"
                 type="email"
                 value={formData.founderEmail}
+                disabled={isEditMode && !isEditable}
                 onChange={(e) => {
                   const val = e.target.value;
                   handleInputChange("founderEmail")(e);
-                  if (val && !emailRegex.test(val))
+                  if (val && !EMAIL_REGEX.test(val))
                     setErrors((prev) => ({
                       ...prev,
                       founderEmail: "Enter a valid email",
@@ -1312,6 +1396,7 @@ function App() {
               <TextField
                 label="Founder Phone Number *"
                 value={formData.founderPhone}
+                disabled={isEditMode && !isEditable}
                 onChange={(e) =>
                   setFormData((p) => ({
                     ...p,
@@ -1327,6 +1412,7 @@ function App() {
                     <InputAdornment position="start">
                       <Select
                         value={formData.founderPhoneCountry}
+                        disabled={isEditMode && !isEditable}
                         onChange={(e) => {
                           const sel = PHONE_COUNTRIES.find(
                             (c) => c.name === e.target.value,
@@ -1354,12 +1440,14 @@ function App() {
               <TextField
                 label="Founder LinkedIn Profile"
                 value={formData.founderLinkedIn}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("founderLinkedIn")}
                 placeholder="LinkedIn Profile URL"
               />
               <TextField
                 label="Founder Facebook Profile"
                 value={formData.founderFacebook}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("founderFacebook")}
                 placeholder="Facebook Profile URL"
               />
@@ -1369,6 +1457,7 @@ function App() {
                 label="Founder Date of Birth *"
                 type="date"
                 value={formData.founderDOB}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("founderDOB")}
                 InputLabelProps={{ shrink: true }}
                 error={!!errors.founderDOB}
@@ -1390,16 +1479,19 @@ function App() {
                 >
                   <FormControlLabel
                     value="Male"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Male"
                   />
                   <FormControlLabel
                     value="Female"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Female"
                   />
                   <FormControlLabel
                     value="Others"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Others"
                   />
@@ -1442,10 +1534,16 @@ function App() {
                 >
                   <FormControlLabel
                     value="Yes"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Yes"
                   />
-                  <FormControlLabel value="No" control={<Radio />} label="No" />
+                  <FormControlLabel
+                    value="No"
+                    disabled={isEditMode && !isEditable}
+                    control={<Radio />}
+                    label="No"
+                  />
                 </RadioGroup>
                 {errors.placementOffered && (
                   <FormHelperText>{errors.placementOffered}</FormHelperText>
@@ -1463,16 +1561,19 @@ function App() {
                   >
                     <FormControlLabel
                       value="On-Campus"
+                      disabled={isEditMode && !isEditable}
                       control={<Radio />}
                       label="On-Campus"
                     />
                     <FormControlLabel
                       value="Off-Campus"
+                      disabled={isEditMode && !isEditable}
                       control={<Radio />}
                       label="Off-Campus"
                     />
                     <FormControlLabel
                       value="Both"
+                      disabled={isEditMode && !isEditable}
                       control={<Radio />}
                       label="Both"
                     />
@@ -1490,10 +1591,16 @@ function App() {
                 >
                   <FormControlLabel
                     value="Yes"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Yes"
                   />
-                  <FormControlLabel value="No" control={<Radio />} label="No" />
+                  <FormControlLabel
+                    value="No"
+                    disabled={isEditMode && !isEditable}
+                    control={<Radio />}
+                    label="No"
+                  />
                 </RadioGroup>
               </FormControl>
               {formData.internshipOffered === "Yes" && (
@@ -1508,16 +1615,19 @@ function App() {
                   >
                     <FormControlLabel
                       value="Paid"
+                      disabled={isEditMode && !isEditable}
                       control={<Radio />}
                       label="Paid"
                     />
                     <FormControlLabel
                       value="Unpaid"
+                      disabled={isEditMode && !isEditable}
                       control={<Radio />}
                       label="Unpaid"
                     />
                     <FormControlLabel
                       value="Performance-Based"
+                      disabled={isEditMode && !isEditable}
                       control={<Radio />}
                       label="Performance"
                     />
@@ -1535,10 +1645,16 @@ function App() {
                 >
                   <FormControlLabel
                     value="Yes"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Yes"
                   />
-                  <FormControlLabel value="No" control={<Radio />} label="No" />
+                  <FormControlLabel
+                    value="No"
+                    disabled={isEditMode && !isEditable}
+                    control={<Radio />}
+                    label="No"
+                  />
                 </RadioGroup>
               </FormControl>
               {formData.trainingOffered === "Yes" && (
@@ -1564,6 +1680,7 @@ function App() {
                         control={
                           <Checkbox
                             checked={formData.trainingType.includes(option)}
+                            disabled={isEditMode && !isEditable}
                             onChange={(e) => {
                               const checked = e.target.checked;
                               setFormData((prev) => ({
@@ -1597,10 +1714,16 @@ function App() {
                 >
                   <FormControlLabel
                     value="Yes"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Yes"
                   />
-                  <FormControlLabel value="No" control={<Radio />} label="No" />
+                  <FormControlLabel
+                    value="No"
+                    disabled={isEditMode && !isEditable}
+                    control={<Radio />}
+                    label="No"
+                  />
                 </RadioGroup>
                 {errors.fypOffered && (
                   <FormHelperText>{errors.fypOffered}</FormHelperText>
@@ -1640,10 +1763,16 @@ function App() {
                 >
                   <FormControlLabel
                     value="Yes"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Yes"
                   />
-                  <FormControlLabel value="No" control={<Radio />} label="No" />
+                  <FormControlLabel
+                    value="No"
+                    disabled={isEditMode && !isEditable}
+                    control={<Radio />}
+                    label="No"
+                  />
                 </RadioGroup>
               </FormControl>
               <FormControl error={!!errors.mentorshipNeeded}>
@@ -1657,10 +1786,16 @@ function App() {
                 >
                   <FormControlLabel
                     value="Yes"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Yes"
                   />
-                  <FormControlLabel value="No" control={<Radio />} label="No" />
+                  <FormControlLabel
+                    value="No"
+                    disabled={isEditMode && !isEditable}
+                    control={<Radio />}
+                    label="No"
+                  />
                 </RadioGroup>
               </FormControl>
               <FormControl error={!!errors.technologySupport}>
@@ -1674,10 +1809,16 @@ function App() {
                 >
                   <FormControlLabel
                     value="Yes"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Yes"
                   />
-                  <FormControlLabel value="No" control={<Radio />} label="No" />
+                  <FormControlLabel
+                    value="No"
+                    disabled={isEditMode && !isEditable}
+                    control={<Radio />}
+                    label="No"
+                  />
                 </RadioGroup>
               </FormControl>
               <FormControl error={!!errors.incubationSpace}>
@@ -1691,10 +1832,16 @@ function App() {
                 >
                   <FormControlLabel
                     value="Yes"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Yes"
                   />
-                  <FormControlLabel value="No" control={<Radio />} label="No" />
+                  <FormControlLabel
+                    value="No"
+                    disabled={isEditMode && !isEditable}
+                    control={<Radio />}
+                    label="No"
+                  />
                 </RadioGroup>
               </FormControl>
               <FormControl
@@ -1711,10 +1858,16 @@ function App() {
                 >
                   <FormControlLabel
                     value="Yes"
+                    disabled={isEditMode && !isEditable}
                     control={<Radio />}
                     label="Yes"
                   />
-                  <FormControlLabel value="No" control={<Radio />} label="No" />
+                  <FormControlLabel
+                    value="No"
+                    disabled={isEditMode && !isEditable}
+                    control={<Radio />}
+                    label="No"
+                  />
                 </RadioGroup>
               </FormControl>
 
@@ -1723,6 +1876,7 @@ function App() {
                 rows={3}
                 label="Internship interest"
                 value={formData.supportInterest || ""}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("supportInterest")}
                 placeholder="Briefly describe your interest in providing internship support"
               />
@@ -1731,6 +1885,7 @@ function App() {
                 rows={3}
                 label="Govt schemes eligibility"
                 value={formData.governmentSchemes || ""}
+                disabled={isEditMode && !isEditable}
                 onChange={handleInputChange("governmentSchemes")}
                 placeholder="List specific schemes you are interested in checking eligibility for"
               />
@@ -1739,22 +1894,31 @@ function App() {
         </Card>
 
         {/* --- SECTION: SUBMIT BUTTONS --- */}
-        <Box sx={{ display: "flex", gap: 2, justifyContent: "center", mt: 4 }}>
-          <Button
-            variant="outlined"
-            color={isEditMode ? "error" : "warning"}
-            onClick={isEditMode ? handleDelete : handleReset}
-          >
-            {isEditMode ? "Delete" : "Reset"}
-          </Button>
+        <Box sx={{ display: "flex", gap: 2 }}>
+          {isEditable && (
+            <Button color="warning" onClick={handleCancelEdit}>
+              Cancel Edit
+            </Button>
+          )}
+
+          {!isEditMode && (
+            <Button variant="outlined" onClick={handleReset}>
+              Reset
+            </Button>
+          )}
 
           <Button
-            type="button"
             variant="contained"
-            color="success"
+            sx={{
+              backgroundColor: "#1f4d3a",
+              "&:hover": {
+                backgroundColor: "#173b2d",
+              },
+            }}
             onClick={handleSubmit}
+            disabled={isEditMode && !isEditable}
           >
-            {isEditMode ? "Submit" : "Update"}
+            {isEditMode ? "Update" : "Submit"}
           </Button>
         </Box>
       </Container>

@@ -5,7 +5,7 @@ class Trainer(BaseModel):
     name: str
     skill: str
     status: str = "Active"
-    exp: str
+    exp: str ="Select experience"
     trained: int
     location: str
     courses: int
@@ -51,68 +51,84 @@ class Certificate(BaseModel):
     status: str = "Pending"
 
 
-class Address(BaseModel):
-    fullAddress: str
-    country: str
-    state: str
-    district: str
-    city: str
-    area: str
-    pinCode: str
-    isPrimary: bool
+class BranchAddress(BaseModel):
+    fullAddress: Optional[str] = ""
+    country: Optional[str] = ""
+    state: Optional[str] = ""
+    district: Optional[str] = ""
+    city: Optional[str] = ""
+    area: Optional[str] = ""
+    pinCode: Optional[str] = ""
+    isPrimary: Optional[bool] = False
+
+
 
 class StartupApplication(BaseModel):
-    # Personal
-    cin: str
-    firstName: str
-    lastName: str
+
+    # ---------- Personal ----------
+    firstName: Optional[str] = ""
+    lastName: Optional[str] = ""
     email: EmailStr
-    phone: str
-    linkedin: Optional[str] = None
-    dateOfBirth: str
-    gender: str
-    designation: str
+    dateOfBirth: Optional[str] = ""
+    gender: Optional[str] = ""
 
-    # Startup
-    startupName: str
-    legalStatus: str
-    dateOfEstablishment: str
-    primarySector: str
-    secondarySector: Optional[str] = None
-    companyPAN: str
-    gstin: Optional[str] = None
-    companyWebsite: Optional[str] = None
+    phoneCountry: Optional[str] = "India"
+    phoneCode: Optional[str] = "+91"
+    phone: Optional[str] = ""
 
-    currentTeamSize: int
-    maleCount: int
-    femaleCount: int
-    numberOfBranches: int
-    branchAddresses: List[Address]
+    # ---------- Online ----------
+    linkedin: Optional[str] = ""
+    website: Optional[str] = ""
 
-    # Founder
-    founderFirstName: str
-    founderLastName: str
-    founderEmail: EmailStr
-    founderPhone: str
-    founderDOB: str
-    founderGender: str
-    founderLinkedIn: Optional[str] = None
-    founderFacebook: Optional[str] = None
+    # ---------- Company ----------
+    designation: Optional[str] = ""
+    cin: Optional[str] = ""
+    startupName: Optional[str] = ""
+    legalStatus: Optional[str] = ""
+    dateOfEstablishment: Optional[str] = ""
+    primarySector: Optional[str] = ""
+    secondarySector: Optional[str] = ""
+    companyPAN: Optional[str] = ""
+    gstin: Optional[str] = ""
+    companyWebsite: Optional[str] = ""
+    numberOfBranches: Optional[int] = 1
 
-    # Student Opportunities
-    placementOffered: str
-    placementType: Optional[str] = None
-    internshipOffered: str
-    internshipType: Optional[str] = None
-    trainingOffered: str
-    trainingType: List[str]
-    fypOffered: str
+    # ---------- Address ----------
+    branchAddresses: List[BranchAddress] = []
 
-    # Requirements
-    fundingNeeded: str
-    mentorshipNeeded: str
-    technologySupport: str
-    incubationSpace: str
-    registrationNeeded: str
-    supportInterest: Optional[str] = None
-    governmentSchemes: Optional[str] = None    
+    # ---------- Team ----------
+    currentTeamSize: Optional[int] = 0
+    maleCount: Optional[int] = 0
+    femaleCount: Optional[int] = 0
+
+    # ---------- Founder ----------
+    founderFirstName: Optional[str] = ""
+    founderLastName: Optional[str] = ""
+    founderEmail: Optional[EmailStr] = None
+
+    founderPhoneCountry: Optional[str] = "India"
+    founderPhoneCode: Optional[str] = "+91"
+    founderPhone: Optional[str] = ""
+
+    founderDOB: Optional[str] = ""
+    founderGender: Optional[str] = ""
+    founderLinkedIn: Optional[str] = ""
+    founderFacebook: Optional[str] = ""
+
+    # ---------- Support ----------
+    fundingNeeded: Optional[str] = ""
+    mentorshipNeeded: Optional[str] = ""
+    technologySupport: Optional[str] = ""
+    incubationSpace: Optional[str] = ""
+    registrationNeeded: Optional[str] = ""
+    supportInterest: Optional[str] = ""
+    governmentSchemes: Optional[str] = ""
+
+    # ---------- Opportunities ----------
+    placementOffered: Optional[str] = ""
+    placementType: Optional[str] = ""
+    internshipOffered: Optional[str] = ""
+    internshipType: Optional[str] = ""
+    trainingOffered: Optional[str] = ""
+    trainingType: List[str] = []
+    fypOffered: Optional[str] = ""
