@@ -36,96 +36,14 @@ import {
 
 /* -------------------- DATA -------------------- */
 
-const initialCertificates = [
-  {
-    id: "CERT001",
-    studentName: "Alice Johnson",
-    course: "Full Stack Web Development",
-    completionDate: "2024-01-15",
-    status: "Issued",
-    issuedDate: "2024-01-18",
-    grade: "A",
-    score: 95,
-  },
-  {
-    id: "CERT002",
-    studentName: "Bob Williams",
-    course: "Data Science & Analytics",
-    completionDate: "2024-01-20",
-    status: "Issued",
-    issuedDate: "2024-01-22",
-    grade: "A-",
-    score: 89,
-  },
-  {
-    id: "CERT003",
-    studentName: "Carol Davis",
-    course: "AI & Machine Learning",
-    completionDate: "2024-01-25",
-    status: "Pending",
-    issuedDate: "-",
-    grade: "B+",
-    score: 82,
-  },
-  {
-    id: "CERT004",
-    studentName: "David Miller",
-    course: "Cloud Computing AWS",
-    completionDate: "2024-01-28",
-    status: "Issued",
-    issuedDate: "2024-01-30",
-    grade: "A",
-    score: 93,
-  },
-  {
-    id: "CERT005",
-    studentName: "Emma Wilson",
-    course: "Cyber Security",
-    completionDate: "2024-02-01",
-    status: "Pending",
-    issuedDate: "-",
-    grade: "B",
-    score: 78,
-  },
-  {
-    id: "CERT006",
-    studentName: "Frank Brown",
-    course: "Mobile App Development",
-    completionDate: "2024-02-05",
-    status: "Issued",
-    issuedDate: "2024-02-07",
-    grade: "A-",
-    score: 88,
-  },
-  {
-    id: "CERT007",
-    studentName: "Grace Taylor",
-    course: "Data Science & Analytics",
-    completionDate: "2024-02-10",
-    status: "Issued",
-    issuedDate: "2024-02-12",
-    grade: "A",
-    score: 92,
-  },
-  {
-    id: "CERT008",
-    studentName: "Henry Anderson",
-    course: "Full Stack Web Development",
-    completionDate: "2024-02-15",
-    status: "Pending",
-    issuedDate: "-",
-    grade: "B+",
-    score: 85,
-  },
-];
-
 /* -------------------- COMPONENT -------------------- */
 const Certificates = () => {
-  const [certificates, setCertificates] = React.useState(initialCertificates);
-
+  const [certificates, setCertificates] = React.useState([]);
+  const [searchTerm, setSearchTerm] = React.useState("");
   const [open, setOpen] = React.useState(false);
-
   const [genOpen, setGenOpen] = React.useState(false);
+  const [verifyId, setVerifyId] = React.useState("");
+  const [verifiedCert, setVerifiedCert] = React.useState(null);
 
   const [formData, setFormData] = React.useState({
     studentName: "",
@@ -136,30 +54,32 @@ const Certificates = () => {
     expiryDate: "",
     status: "Pending",
   });
+  const filteredCertificates = certificates.filter((c) => {
+    const query = searchTerm.toLowerCase();
+
+    return (
+      c.studentName?.toLowerCase().includes(query) ||
+      c.course?.toLowerCase().includes(query) ||
+      c._id?.toLowerCase().includes(query)
+    );
+  });
 
   const handleIssueCertificate = async () => {
     try {
       const payload = {
         studentName: formData.studentName,
         course: formData.course,
-        grade: formData.grade,
-        score: Number(formData.score),
         completionDate: formData.expiryDate,
-        issuedDate: formData.issueDate,
+        issuedDate: formData.issueDate || "-",
         status: formData.status,
+
+        ...(formData.grade && { grade: formData.grade }),
+        ...(formData.score && { score: Number(formData.score) }),
       };
 
-      const res = await Api.post("/certificates", payload);
+      await Api.post("/certificates", payload);
 
-      const certFromBackend = res.data?.data || res.data;
-
-      setCertificates((prev) => [
-        ...prev,
-        {
-          ...certFromBackend,
-          id: certFromBackend._id, // frontend id
-        },
-      ]);
+      await fetchCertificates();
 
       setFormData({
         studentName: "",
@@ -174,10 +94,53 @@ const Certificates = () => {
       setGenOpen(false);
       alert("✅ Certificate issued successfully!");
     } catch (err) {
-      console.error(err);
+      console.error(err.response?.data || err);
       alert("❌ Error issuing certificate");
     }
   };
+
+  React.useEffect(() => {
+    fetchCertificates();
+  }, []);
+
+  const fetchCertificates = async () => {
+    try {
+      const res = await Api.get("/certificates");
+
+      const formatted = res.data.map((c) => ({
+        ...c,
+        id: c._id, // frontend-friendly id
+      }));
+
+      setCertificates(formatted);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  const handleVerifyCertificate = async () => {
+    try {
+      const res = await Api.get("/certificates");
+
+      const found = res.data.find((c) => c._id === verifyId);
+
+      if (!found) {
+        alert("❌ Certificate not found");
+        return;
+      }
+
+      setVerifiedCert(found);
+      alert("✅ Certificate verified successfully!");
+      setOpen(false);
+    } catch (err) {
+      console.error(err);
+      alert("❌ Verification failed");
+    }
+  };
+  React.useEffect(() => {
+    if (verifiedCert) {
+      console.log("Verified Certificate:", verifiedCert);
+    }
+  }, [verifiedCert]);
 
   return (
     <Box p={4}>
@@ -381,6 +344,8 @@ const Certificates = () => {
           <TextField
             fullWidth
             placeholder="Search by student name or certificate ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -411,13 +376,14 @@ const Certificates = () => {
             </TableHead>
 
             <TableBody>
-              {certificates.map((c) => (
-                <TableRow key={c.id} hover>
+              {filteredCertificates.map((c) => (
+                <TableRow key={c._id} hover>
                   <TableCell sx={{ fontFamily: "monospace" }}>{c.id}</TableCell>
                   <TableCell>{c.studentName}</TableCell>
                   <TableCell>{c.course}</TableCell>
                   <TableCell>{c.grade ?? "-"}</TableCell>
                   <TableCell>{c.score != null ? c.score : "-"}</TableCell>
+
                   <TableCell>{c.completionDate}</TableCell>
                   <TableCell>{c.issuedDate}</TableCell>
 
@@ -479,13 +445,20 @@ const Certificates = () => {
           </Stack>
 
           <Stack spacing={2} mt={2}>
-            <TextField label="Certificate ID" placeholder="e.g., CERT001" />
+            <TextField
+              label="Certificate ID"
+              placeholder="Paste certificate ID"
+              value={verifyId}
+              onChange={(e) => setVerifyId(e.target.value)}
+            />
+
             <Button
               variant="contained"
               sx={{
                 backgroundColor: "#1f4d3a",
                 "&:hover": { backgroundColor: "#1f4d3a" },
               }}
+              onClick={handleVerifyCertificate}
             >
               Verify
             </Button>

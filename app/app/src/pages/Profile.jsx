@@ -110,7 +110,7 @@ const initialFormState = {
   founderFirstName: "",
   founderLastName: "",
   founderPhoneCountry: "India",
-  founderPhoneCode: "+91",
+  founderPhoneCode: "",
   founderPhone: "",
   founderDOB: "",
   founderGender: "",
@@ -132,7 +132,7 @@ const initialFormState = {
   trainingType: [],
   fypOffered: "",
   phoneCountry: "India",
-  phoneCode: "+91",
+  phoneCode: "",
   phone: "",
 };
 const initialAddress = {
@@ -170,7 +170,7 @@ function App() {
     cin: false,
     email: false,
   });
-
+  //fetching the required lists based on the selected country, state, and district.
   const preloadAddressDropdowns = async (addresses) => {
     const newAddressArrays = {};
 
@@ -219,17 +219,21 @@ function App() {
     setIsEditable(true);
   };
 
-  const handleCancelEdit = () => {
-    if (originalData) {
-      setFormData(originalData);
+  const handleDelete = async () => {
+    try {
+      await Api.delete(`/startup/${encodeURIComponent(formData.email)}`);
+      alert("Startup deleted successfully.");
+      handleReset();
+    } catch (error) {
+      alert(
+        error.response?.status === 404
+          ? "Record not found."
+          : "Server error. Could not delete.",
+      );
     }
-    setErrors({});
-    setIsEditable(false);
   };
 
-  // --- API: FETCH COUNTRY LIST ON LOAD ---
-
-  // --- API: FETCH COMPANY DETAILS VIA PERSONAL EMAIL ---
+  // ---LOAD EMAIL FROM LOCAL STORAGE ---
   useEffect(() => {
     const storedEmail = localStorage.getItem("userEmail");
 
@@ -240,7 +244,7 @@ function App() {
       }));
     }
   }, []);
-
+  //----FETCH COMPANY BY EMAIL---
   useEffect(() => {
     if (!formData.email) return;
     if (!EMAIL_REGEX.test(formData.email)) return;
@@ -267,7 +271,7 @@ function App() {
           dateOfBirth: data.dateOfBirth || "",
           gender: data.gender || "",
           phoneCountry: data.phoneCountry || "India",
-          phoneCode: data.phoneCode || "+91",
+          phoneCode: data.phoneCode || "",
           phone: data.phone || "",
 
           // Online
@@ -343,7 +347,7 @@ function App() {
           founderLastName: data.founderLastName || "",
           founderEmail: data.founderEmail || "",
           founderPhoneCountry: data.founderPhoneCountry || "India",
-          founderPhoneCode: data.founderPhoneCode || "+91",
+          founderPhoneCode: data.founderPhoneCode || "",
           founderPhone: data.founderPhone || "",
           founderDOB: data.founderDOB || "",
           founderGender: data.founderGender || "",
@@ -386,6 +390,7 @@ function App() {
 
     fetchCompanyByEmail();
   }, [formData.email]);
+  //---from an API, and stores the country names while showing a loading state.---
   useEffect(() => {
     const fetchCountries = async () => {
       setIsLoading((prev) => ({ ...prev, countries: true }));
@@ -580,7 +585,7 @@ function App() {
     }
   };
 
-  // --- LOGIC: HANDLE CITY CHANGE ---
+  // --- FROM THE branch address automatically fills the pin code based on that city. ---
   const handleCityChange = (index, event) => {
     const selectedCityName = event.target.value;
     const selectedCityObj = addressArrays[index]?.cities.find(
@@ -595,7 +600,7 @@ function App() {
     setFormData({ ...formData, branchAddresses: updatedAddresses });
   };
 
-  // --- LOGIC: INPUT CHANGE HANDLER ---
+  // --- COUNT THE MALE & FEMALE = TOTAL TEAM ---
   const handleInputChange = (field) => (event) => {
     const value = event.target.value;
     if (
@@ -630,7 +635,7 @@ function App() {
     });
     if (errors[field]) setErrors((prevErr) => ({ ...prevErr, [field]: "" }));
   };
-
+  //---choose the country related phone number---
   const handlePhoneCountryChange = (e) => {
     const selected = PHONE_COUNTRIES.find((c) => c.name === e.target.value);
     setFormData((prev) => ({
@@ -640,7 +645,7 @@ function App() {
       phone: "",
     }));
   };
-
+  //---Form Validation---
   const validateForm = () => {
     let tempErrors = {};
     let isValid = true;
@@ -732,8 +737,7 @@ function App() {
     try {
       const payload = {
         ...formData,
-        phone: `${formData.phoneCode}${formData.phone}`,
-        founderPhone: `${formData.founderPhoneCode}${formData.founderPhone}`,
+
         currentTeamSize: parseInt(formData.currentTeamSize) || 0,
         numberOfBranches: parseInt(formData.numberOfBranches) || 1,
       };
@@ -1895,15 +1899,20 @@ function App() {
 
         {/* --- SECTION: SUBMIT BUTTONS --- */}
         <Box sx={{ display: "flex", gap: 2 }}>
-          {isEditable && (
-            <Button color="warning" onClick={handleCancelEdit}>
-              Cancel Edit
+          {isEditMode && (
+            <Button variant="outlined" color="error" onClick={handleDelete}>
+              Delete
             </Button>
           )}
-
-          {!isEditMode && (
-            <Button variant="outlined" onClick={handleReset}>
-              Reset
+          {isEditMode && isEditable && (
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setFormData(originalData);
+                setIsEditable(false);
+              }}
+            >
+              Cancel
             </Button>
           )}
 

@@ -1,49 +1,101 @@
 from fastapi import APIRouter, status, HTTPException
+from bson import ObjectId
 from model import Courses,Trainer,Placement,StartupApplication,Certificate
 from database import courses_collection,Trainer_collection,placement_collection,profile_collection,certificates_collection
 
 router = APIRouter()
 
-
-@router.post("/courses", status_code=status.HTTP_201_CREATED)
+@router.post("/courses")
 def create_course(course: Courses):
     result = courses_collection.insert_one(course.model_dump())
-
     return {
         "message": "Course added successfully",
         "id": str(result.inserted_id)
     }
-
-
 @router.get("/courses")
 def get_courses():
     courses = []
-
     for course in courses_collection.find():
-        course["_id"] = str(course["_id"]) 
+        course["_id"] = str(course["_id"])
         courses.append(course)
-
     return courses
 
+@router.delete("/courses/{course_id}")
+def delete_course(course_id: str):
+    result = courses_collection.delete_one(
+        {"_id": ObjectId(course_id)}
+    )
 
-@router.post("/trainers")
-def create_Trainer(Trainer: Trainer):
-    result = Trainer_collection.insert_one(Trainer.model_dump())
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    return {"message": "Course deleted"}
+
+@router.put("/courses/{id}")
+def update_course(id: str, course: Courses):
+    result = courses_collection.update_one(
+        {"_id": ObjectId(id)},
+        {"$set": course.model_dump()}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    return {"message": "Course updated successfully"}
+
+
+@router.post("/trainers", status_code=status.HTTP_201_CREATED)
+def create_trainer(trainer: Trainer):
+    result = Trainer_collection.insert_one(trainer.model_dump())
 
     return {
         "message": "Trainer added successfully",
         "id": str(result.inserted_id)
     }
-    
+
+
 @router.get("/trainers")
-def get_Trainer():
+def get_trainers():
     trainers = []
 
     for trainer in Trainer_collection.find():
-        trainer["_id"] = str(trainer["_id"]) 
+        trainer["_id"] = str(trainer["_id"])
         trainers.append(trainer)
 
-    return trainers   
+    return trainers
+
+@router.put("/trainers/{trainer_id}")
+def update_trainer(trainer_id: str, trainer: Trainer):
+    update_data = trainer.model_dump()
+
+    result = Trainer_collection.update_one(
+        {"_id": ObjectId(trainer_id)},
+        {"$set": update_data}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="Trainer not found"
+        )
+
+    return {"message": "Trainer updated successfully"}
+
+@router.delete("/trainers/{trainer_id}")
+def delete_trainer(trainer_id: str):
+    result = Trainer_collection.delete_one(
+        {"_id": ObjectId(trainer_id)}
+    )
+
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="Trainer not found"
+        )
+
+    return {"message": "Trainer deleted successfully"}
+
+  
 
 @router.post("/placements")
 def create_placement(placement: Placement):

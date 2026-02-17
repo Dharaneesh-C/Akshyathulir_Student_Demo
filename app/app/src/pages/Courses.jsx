@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -15,222 +15,16 @@ import {
   Stack,
   Divider,
 } from "@mui/material";
-
+import Api from "./api";
 import { Search, Visibility, Edit, Delete } from "@mui/icons-material";
 
-/* -------------------- DATA -------------------- */
-const courses_main = [
-  {
-    id: "CRS001",
-    name: "FullStack Development",
-    duration: "6 months",
-    fees: "$2,500",
-    trainer: "John Smith",
-    status: "Active",
-    enrolled: 45,
-    schedule: "Mon - Fri | 9 AM - 11 AM",
-    eligibility: "Basic programming knowledge",
-    description:
-      "Learn frontend and backend development using modern frameworks and tools.",
-    syllabus: [
-      "HTML, CSS, JavaScript",
-      "React.js",
-      "Node.js & Express",
-      "MongoDB",
-      "Project & Deployment",
-    ],
-    outcomes: [
-      "Build full stack applications",
-      "Deploy real-world projects",
-      "Industry-ready skills",
-    ],
-  },
-
-  {
-    id: "CRS002",
-    name: "Data Science & Analytics",
-    duration: "8 months",
-    fees: "$3,200",
-    trainer: "Sarah Johnson",
-    status: "Active",
-    enrolled: 38,
-    schedule: "Mon - Sat | 10 AM - 12 PM",
-    eligibility: "Basic math & Python",
-    description:
-      "Master data analysis, visualization, and machine learning techniques.",
-    syllabus: [
-      "Python & NumPy",
-      "Pandas & Visualization",
-      "Statistics",
-      "Machine Learning",
-      "Capstone Project",
-    ],
-    outcomes: [
-      "Analyze real datasets",
-      "Build ML models",
-      "Data Scientist career",
-    ],
-  },
-
-  {
-    id: "CRS003",
-    name: "Mobile App Development",
-    duration: "5 months",
-    fees: "$2,800",
-    trainer: "Mike Brown",
-    status: "Active",
-    enrolled: 32,
-    schedule: "Mon - Fri | 2 PM - 4 PM",
-    eligibility: "Basic Java or Kotlin",
-    description:
-      "Build Android & cross-platform mobile applications from scratch.",
-    syllabus: [
-      "UI/UX Basics",
-      "Android Studio",
-      "Kotlin",
-      "API Integration",
-      "Play Store Deployment",
-    ],
-    outcomes: [
-      "Create Android apps",
-      "Publish apps",
-      "Mobile developer skills",
-    ],
-  },
-
-  {
-    id: "CRS004",
-    name: "Cloud Computing (AWS)",
-    duration: "4 months",
-    fees: "$2,000",
-    trainer: "Emily Davis",
-    status: "Active",
-    enrolled: 28,
-    schedule: "Weekend | 10 AM - 1 PM",
-    eligibility: "Basic networking knowledge",
-    description: "Learn cloud infrastructure, deployment, and AWS services.",
-    syllabus: [
-      "Cloud Basics",
-      "EC2 & S3",
-      "IAM",
-      "Cloud Security",
-      "Deployment Projects",
-    ],
-    outcomes: [
-      "AWS certification ready",
-      "Deploy cloud apps",
-      "Cloud engineer role",
-    ],
-  },
-
-  {
-    id: "CRS005",
-    name: "Cyber Security",
-    duration: "6 months",
-    fees: "$3,000",
-    trainer: "Alex Turner",
-    status: "Active",
-    enrolled: 40,
-    schedule: "Mon - Fri | 11 AM - 1 PM",
-    eligibility: "Basic networking",
-    description: "Protect systems and networks from cyber threats.",
-    syllabus: [
-      "Network Security",
-      "Ethical Hacking",
-      "Penetration Testing",
-      "Firewalls",
-      "Security Tools",
-    ],
-    outcomes: [
-      "Cyber security analyst",
-      "Ethical hacker skills",
-      "Security certifications",
-    ],
-  },
-
-  {
-    id: "CRS006",
-    name: "UI / UX Design",
-    duration: "3 months",
-    fees: "$1,800",
-    trainer: "Jessica Lee",
-    status: "Active",
-    enrolled: 25,
-    schedule: "Mon - Thu | 4 PM - 6 PM",
-    eligibility: "Creativity & interest in design",
-    description:
-      "Design user-friendly and visually appealing digital products.",
-    syllabus: [
-      "Design Principles",
-      "Figma",
-      "Wireframing",
-      "Prototyping",
-      "Portfolio Project",
-    ],
-    outcomes: [
-      "UI/UX designer role",
-      "Design portfolio",
-      "User-centered thinking",
-    ],
-  },
-
-  {
-    id: "CRS007",
-    name: "Artificial Intelligence",
-    duration: "7 months",
-    fees: "$3,500",
-    trainer: "Dr. Robert White",
-    status: "Active",
-    enrolled: 30,
-    schedule: "Mon - Fri | 8 AM - 10 AM",
-    eligibility: "Python & Math basics",
-    description: "Learn AI concepts, algorithms, and real-world applications.",
-    syllabus: [
-      "AI Fundamentals",
-      "Search Algorithms",
-      "Neural Networks",
-      "Deep Learning",
-      "AI Projects",
-    ],
-    outcomes: [
-      "AI engineer skills",
-      "Build intelligent systems",
-      "Advanced ML knowledge",
-    ],
-  },
-
-  {
-    id: "CRS008",
-    name: "Digital Marketing",
-    duration: "3 months",
-    fees: "$1,500",
-    trainer: "Rachel Green",
-    status: "Active",
-    enrolled: 50,
-    schedule: "Weekend | 2 PM - 5 PM",
-    eligibility: "Basic internet knowledge",
-    description: "Promote brands and products using digital platforms.",
-    syllabus: [
-      "SEO",
-      "Social Media Marketing",
-      "Google Ads",
-      "Email Marketing",
-      "Campaign Analytics",
-    ],
-    outcomes: [
-      "Digital marketer role",
-      "Run ad campaigns",
-      "Marketing analytics",
-    ],
-  },
-];
 /* -------------------- INITIAL STATE -------------------- */
 const initialState = {
   name: "",
   category: "",
   duration: "",
   fees: "",
-  status: "Draft",
+  status: "Active",
   startDate: "",
   trainer: "",
   description: "",
@@ -238,38 +32,84 @@ const initialState = {
 
 const Courses = () => {
   // add course
-  const [courses, setCourses] = useState(courses_main);
+  const [courses, setCourses] = useState([]);
   const [openAdd, setOpenAdd] = useState(false);
   const [newCourse, setNewCourse] = useState(initialState);
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [isEdit, setIsEdit] = useState(false);
+  const [editId, setEditId] = useState(null);
 
-  /* -------------------- ADD COURSE -------------------- */
-  const handleAddCourse = () => {
-    const newCourseWithId = {
-      ...newCourse,
-      id: `CRS${courses.length + 1}`,
-      status: "Active",
-      enrolled: 0,
-      syllabus: newCourse.syllabus.split(","),
-      outcomes: newCourse.outcomes.split(","),
-    };
+  useEffect(() => {
+    fetchCourses();
+  }, []);
 
-    setCourses((prev) => [...prev, newCourseWithId]);
-    setOpenAdd(false);
-    setNewCourse(initialState);
+  const fetchCourses = async () => {
+    try {
+      const res = await Api.get("/courses");
+      setCourses(res.data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const filteredCourses = courses.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()),
+  /* -------------------- ADD COURSE -------------------- */
+
+  const filteredCourses = courses.filter(
+    (c) => c.name && c.name.toLowerCase().includes(search.toLowerCase()),
   );
 
   /* -------------------- DELETE COURSE -------------------- */
-  const handleDeleteCourse = (id) => {
-    const updatedCourses = courses.filter((course) => course.id !== id);
-    setCourses(updatedCourses);
+  const handleDeleteCourse = async (id) => {
+    if (!window.confirm("Delete this course?")) return;
+
+    try {
+      await Api.delete(`/courses/${id}`);
+      setCourses((prev) => prev.filter((c) => c._id !== id));
+    } catch (err) {
+      console.error(err);
+      alert("❌ Delete failed");
+    }
+  };
+
+  const handleAddCourse = async () => {
+    try {
+      const payload = {
+        name: newCourse.name,
+        category: newCourse.category,
+        duration: newCourse.duration,
+        fees: newCourse.fees,
+        trainer: newCourse.trainer,
+        status: newCourse.status,
+        description: newCourse.description,
+        syllabus: newCourse.syllabus
+          ? newCourse.syllabus.split(",").map((s) => s.trim())
+          : [],
+        outcomes: newCourse.outcomes
+          ? newCourse.outcomes.split(",").map((o) => o.trim())
+          : [],
+      };
+
+      if (isEdit) {
+        // 🔁 UPDATE
+        await Api.put(`/courses/${editId}`, payload);
+      } else {
+        // ➕ ADD
+        await Api.post("/courses", { ...payload, enrolled: 0 });
+      }
+
+      await fetchCourses();
+
+      setOpenAdd(false);
+      setNewCourse(initialState);
+      setIsEdit(false);
+      setEditId(null);
+    } catch (err) {
+      console.error(err.response?.data || err);
+      alert("❌ Failed to save course");
+    }
   };
 
   return (
@@ -325,7 +165,7 @@ const Courses = () => {
             item
             xs={12}
             md={4}
-            key={course.id}
+            key={course._id}
             sx={{ width: 300, height: 350 }}
           >
             <Card
@@ -399,13 +239,32 @@ const Courses = () => {
                     >
                       <Visibility fontSize="small" />
                     </IconButton>
-                    <IconButton size="small">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setIsEdit(true);
+                        setEditId(course._id);
+                        setNewCourse({
+                          name: course.name || "",
+                          category: course.category || "",
+                          duration: course.duration || "",
+                          fees: course.fees || "",
+                          trainer: course.trainer || "",
+                          status: course.status || "Active",
+                          description: course.description || "",
+                          syllabus: (course.syllabus || []).join(", "),
+                          outcomes: (course.outcomes || []).join(", "),
+                        });
+                        setOpenAdd(true);
+                      }}
+                    >
                       <Edit fontSize="small" />
                     </IconButton>
+
                     <IconButton
                       size="small"
                       sx={{ color: "error.main" }}
-                      onClick={() => handleDeleteCourse(course.id)}
+                      onClick={() => handleDeleteCourse(course._id)}
                     >
                       <Delete fontSize="small" />
                     </IconButton>
@@ -420,14 +279,19 @@ const Courses = () => {
       {/* ADD COURSE DIALOG */}
       <Dialog
         open={openAdd}
-        onClose={() => setOpenAdd(false)}
+        onClose={() => {
+          setOpenAdd(false);
+          setIsEdit(false);
+          setEditId(null);
+          setNewCourse(initialState);
+        }}
         fullWidth
         maxWidth="sm"
         PaperProps={{ sx: { borderRadius: 3 } }}
       >
         <Box sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom>
-            Add Course
+            {isEdit ? "Edit Course" : "Add Course"}
           </Typography>
 
           <Grid container spacing={2}>
@@ -631,7 +495,7 @@ const Courses = () => {
                 sx={{ backgroundColor: "#1b5e20" }}
                 onClick={handleAddCourse}
               >
-                Add Course
+                {isEdit ? "Update Course" : "Add Course"}
               </Button>
             </Grid>
           </Grid>
@@ -651,14 +515,14 @@ const Courses = () => {
             <Divider sx={{ my: 2 }} />
 
             <Typography fontWeight="bold">Syllabus</Typography>
-            {selectedCourse.syllabus.map((s, i) => (
+            {(selectedCourse.syllabus || []).map((s, i) => (
               <Typography key={i}>• {s}</Typography>
             ))}
 
             <Typography fontWeight="bold" mt={2}>
               Outcomes
             </Typography>
-            {selectedCourse.outcomes.map((o, i) => (
+            {(selectedCourse.outcomes || []).map((o, i) => (
               <Typography key={i}>• {o}</Typography>
             ))}
           </Box>

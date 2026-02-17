@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Card,
@@ -27,98 +27,6 @@ import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 
-// Dummy data
-const trainers = [
-  {
-    name: "Rajesh Kumar",
-    skill: "Full Stack Development",
-    status: "Active",
-    rating: 4.8,
-    exp: "12 Years",
-    trained: 340,
-    location: "Bangalore",
-    courses: 2,
-    initials: "RK",
-  },
-  {
-    name: "Priya Sharma",
-    skill: "Data Science & ML",
-    status: "Active",
-    rating: 4.9,
-    exp: "8 Years",
-    trained: 210,
-    location: "Hyderabad",
-    courses: 1,
-    initials: "PS",
-  },
-  {
-    name: "Amit Patel",
-    skill: "Digital Marketing",
-    status: "Active",
-    rating: 4.6,
-    exp: "10 Years",
-    trained: 520,
-    location: "Mumbai",
-    courses: 1,
-    initials: "AP",
-  },
-
-  {
-    name: "Suresh Iyer",
-    skill: "Cloud Computing (AWS)",
-    status: "Active",
-    rating: 4.7,
-    exp: "9 Years",
-    trained: 180,
-    location: "Chennai",
-    courses: 2,
-    initials: "SI",
-  },
-  {
-    name: "Neha Verma",
-    skill: "UI / UX Design",
-    status: "Active",
-    rating: 4.8,
-    exp: "7 Years",
-    trained: 260,
-    location: "Pune",
-    courses: 1,
-    initials: "NV",
-  },
-  {
-    name: "Karthik R",
-    skill: "Java & Spring Boot",
-    status: "Active",
-    rating: 4.6,
-    exp: "11 Years",
-    trained: 410,
-    location: "Coimbatore",
-    courses: 3,
-    initials: "KR",
-  },
-  {
-    name: "Ananya Singh",
-    skill: "Cyber Security",
-    status: "Active",
-    rating: 4.9,
-    exp: "6 Years",
-    trained: 150,
-    location: "Noida",
-    courses: 1,
-    initials: "AS",
-  },
-  {
-    name: "Vikram Rao",
-    skill: "DevOps Engineering",
-    status: "Active",
-    rating: 4.7,
-    exp: "13 Years",
-    trained: 390,
-    location: "Bangalore",
-    courses: 2,
-    initials: "VR",
-  },
-];
 /* -------------------- INITIAL TRAINER STATE -------------------- */
 const initialTrainerState = {
   name: "",
@@ -127,66 +35,60 @@ const initialTrainerState = {
   phone: "",
   qualification: "",
   location: "",
-  exp: "Select experience",
+  exp: "",
   trained: "",
   courses: "",
-  status: "Active",
+  status: "",
 };
 
 function Trainers() {
-  const [open, setOpen] = React.useState(false);
-  const [trainerList, setTrainerList] = React.useState(trainers);
-  const [viewOpen, setViewOpen] = React.useState(false);
-  const [selectedTrainer, setSelectedTrainer] = React.useState(null);
+  const [trainerList, setTrainerList] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [selectedTrainer, setSelectedTrainer] = useState(null);
+  const [formData, setFormData] = useState(initialTrainerState);
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [isEdit, setIsEdit] = useState(false);
+  const [editId, setEditId] = useState(null);
 
-  const [formData, setFormData] = React.useState(initialTrainerState);
+  /* ================= FETCH TRAINERS ================= */
+  const fetchTrainers = async () => {
+    try {
+      const res = await Api.get("/trainers");
 
-const handleAddTrainer = async () => {
-  try {
-    const payload = {
-      name: formData.name,
-      skill: formData.skill,
-      email: formData.email,
-      phone: formData.phone,
-      qualification: formData.qualification,
-      location: formData.location,
-      exp: formData.exp,
-      trained: Number(formData.trained || 0),
-      courses: Number(formData.courses || 0),
-      status: formData.status,
-    };
+      const formatted = res.data.map((t) => ({
+        ...t,
+        initials:
+          t.name
+            ?.split(" ")
+            .map((n) => n[0])
+            .join("") || "NA",
+      }));
 
-    await Api.post("/trainers", payload);
+      setTrainerList(formatted);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-    const formattedTrainer = {
-      name: payload.name,
-      skill: payload.skill,
-      status: payload.status,
-      rating: 4.5,
-      exp: payload.exp,
-      trained: payload.trained,
-      location: payload.location,
-      courses: payload.courses,
-      initials:
-        payload.name
-          ?.split(" ")
-          .map((n) => n[0])
-          .join("") || "NA",
-    };
+  useEffect(() => {
+    fetchTrainers();
+  }, []);
 
-    setTrainerList((prev) => [...prev, formattedTrainer]);
-    setOpen(false);
-    setFormData(initialTrainerState);
+  /* ================= ADD TRAINER ================= */
 
-    alert("✅ Trainer added successfully!");
-  } catch (error) {
-    console.error("FULL ERROR:", error);
-    alert("❌ Error while adding trainer");
-  }
-};
+  /* ================= DELETE TRAINER ================= */
+  const handleDeleteTrainer = async (id) => {
+    if (!window.confirm("Delete this trainer?")) return;
 
-
-
+    try {
+      await Api.delete(`/trainers/${id}`);
+      setTrainerList((prev) => prev.filter((t) => t._id !== id));
+    } catch (err) {
+      console.error(err);
+      alert("❌ Delete failed");
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -194,9 +96,47 @@ const handleAddTrainer = async () => {
       ...prev,
       [name]: value,
     }));
-    
   };
-  
+  const filteredTrainers = trainerList.filter((trainer) =>
+    trainer.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+  const handleAddTrainer = async () => {
+    try {
+      const payload = {
+        name: formData.name,
+        skill: formData.skill,
+        location: formData.location,
+        exp: formData.exp,
+        status: formData.status,
+        trained: Number(formData.trained || 0),
+        courses: Number(formData.courses || 0),
+
+        ...(formData.email && { email: formData.email }),
+        ...(formData.phone && { phone: formData.phone }),
+        ...(formData.qualification && {
+          qualification: formData.qualification,
+        }),
+      };
+
+      if (isEdit) {
+        // 🔁 UPDATE
+        await Api.put(`/trainers/${editId}`, payload);
+      } else {
+        // ➕ ADD
+        await Api.post("/trainers", payload);
+      }
+
+      await fetchTrainers();
+
+      setOpen(false);
+      setFormData(initialTrainerState);
+      setIsEdit(false);
+      setEditId(null);
+    } catch (err) {
+      console.error(err.response?.data || err);
+      alert("❌ Failed to save trainer");
+    }
+  };
 
   return (
     <Box sx={{ p: 4, backgroundColor: "#eef8ee", minHeight: "100vh" }}>
@@ -240,6 +180,8 @@ const handleAddTrainer = async () => {
       <TextField
         fullWidth
         placeholder="Search trainers..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
         InputProps={{
           startAdornment: <SearchIcon sx={{ mr: 1 }} />,
         }}
@@ -248,9 +190,9 @@ const handleAddTrainer = async () => {
 
       {/* Trainer Cards */}
       <Grid container spacing={3}>
-        {trainerList.map((t, i) => (
-          <Grid item xs={12} md={4} key={i} sx={{ width: 400,}}>
-            <Card sx={{ borderRadius: 3, height:220 }}>
+        {filteredTrainers.map((t) => (
+          <Grid item xs={12} md={4} key={t._id} sx={{ width: 400 }}>
+            <Card sx={{ borderRadius: 3, height: 220 }}>
               <CardContent>
                 {/* Top */}
                 <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
@@ -284,7 +226,9 @@ const handleAddTrainer = async () => {
                         }}
                       >
                         <StarIcon fontSize="small" color="warning" />
-                        <Typography variant="body2">{t.rating}</Typography>
+                        <Typography variant="body2">
+                          {t.rating ?? 4.5}
+                        </Typography>
                       </Box>
                     </Box>
                   </Box>
@@ -333,10 +277,34 @@ const handleAddTrainer = async () => {
                     <VisibilityOutlinedIcon />
                   </IconButton>
 
-                  <IconButton>
+                  <IconButton
+                    onClick={() => {
+                      setIsEdit(true);
+                      setEditId(t._id);
+
+                      setFormData({
+                        name: t.name || "",
+                        skill: t.skill || "",
+                        email: t.email || "",
+                        phone: t.phone || "",
+                        qualification: t.qualification || "",
+                        location: t.location || "",
+                        exp: t.exp || "",
+                        trained: t.trained || "",
+                        courses: t.courses || "",
+                        status: t.status || "",
+                      });
+
+                      setOpen(true);
+                    }}
+                  >
                     <EditOutlinedIcon />
                   </IconButton>
-                  <IconButton color="error">
+
+                  <IconButton
+                    color="error"
+                    onClick={() => handleDeleteTrainer(t._id)}
+                  >
                     <DeleteOutlineIcon />
                   </IconButton>
                 </Box>
@@ -349,7 +317,12 @@ const handleAddTrainer = async () => {
       {/* ADD TRAINER DIALOG */}
       <Dialog
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          setOpen(false);
+          setIsEdit(false);
+          setEditId(null);
+          setFormData(initialTrainerState);
+        }}
         maxWidth="sm"
         fullWidth
         PaperProps={{ sx: { borderRadius: 3 } }}
@@ -365,9 +338,17 @@ const handleAddTrainer = async () => {
             }}
           >
             <Typography fontWeight={600} fontSize={18}>
-              Add New Trainer
+              {isEdit ? "Edit Trainer" : "Add New Trainer"}
             </Typography>
-            <IconButton onClick={() => setOpen(false)}>
+
+            <IconButton
+              onClick={() => {
+                setOpen(false);
+                setIsEdit(false);
+                setEditId(null);
+                setFormData(initialTrainerState);
+              }}
+            >
               <CloseIcon />
             </IconButton>
           </Box>
@@ -512,6 +493,19 @@ const handleAddTrainer = async () => {
                   name="exp"
                   value={formData.exp}
                   onChange={handleChange}
+                  SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (selected) => {
+                      if (!selected) {
+                        return (
+                          <span style={{ color: "#aaa" }}>
+                            Select Experience
+                          </span>
+                        );
+                      }
+                      return selected;
+                    },
+                  }}
                 >
                   <MenuItem value="Select experience"></MenuItem>
                   <MenuItem value="1-3 Years">1–3 Years</MenuItem>
@@ -539,6 +533,17 @@ const handleAddTrainer = async () => {
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
+                  SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (selected) => {
+                      if (selected === "") {
+                        return (
+                          <span style={{ color: "#aaa" }}>Select Status</span>
+                        );
+                      }
+                      return selected;
+                    },
+                  }}
                 >
                   <MenuItem value="Active">Active</MenuItem>
                   <MenuItem value="On Leave">On Leave</MenuItem>
@@ -568,7 +573,7 @@ const handleAddTrainer = async () => {
               }}
               onClick={handleAddTrainer}
             >
-              Add Trainer
+              {isEdit ? "Update Trainer" : "Add Trainer"}
             </Button>
           </Box>
         </Box>

@@ -4,23 +4,30 @@ from typing import Optional,List
 class Trainer(BaseModel):
     name: str
     skill: str
-    status: str = "Active"
-    exp: str ="Select experience"
-    trained: int
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = ""
+    qualification: Optional[str] = ""
     location: str
-    courses: int
+    exp: str = "Select experience"
+    trained: int = 0
+    courses: int = 0
+    status: str = "Active"
+    rating: Optional[float] = 4.5
     
     
     
 class Courses(BaseModel):
     name: str
-    category: str
+    category: Optional[str] = "IT & Software"
     duration: str
     fees: str
-    status: str
-    startDate: str
-    trainer: str
-    description: str
+    trainer: Optional[str] = ""
+    status: str = "Active"
+    startDate: Optional[str] = ""
+    description: Optional[str] = ""
+    syllabus: List[str] = []
+    outcomes: List[str] = []
+    enrolled: Optional[int] = 0
     
 
     
@@ -73,7 +80,7 @@ class StartupApplication(BaseModel):
     gender: Optional[str] = ""
 
     phoneCountry: Optional[str] = "India"
-    phoneCode: Optional[str] = "+91"
+    phoneCode: Optional[str] = ""
     phone: Optional[str] = ""
 
     # ---------- Online ----------
@@ -107,7 +114,7 @@ class StartupApplication(BaseModel):
     founderEmail: Optional[EmailStr] = None
 
     founderPhoneCountry: Optional[str] = "India"
-    founderPhoneCode: Optional[str] = "+91"
+    founderPhoneCode: Optional[str] = ""
     founderPhone: Optional[str] = ""
 
     founderDOB: Optional[str] = ""
