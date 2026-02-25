@@ -119,7 +119,7 @@ const Certificates = () => {
   };
   const handleVerifyCertificate = async () => {
     try {
-      const res = await Api.get("/certificates");
+      const res = await Api.get("/certificates/");
 
       const found = res.data.find((c) => c._id === verifyId);
 

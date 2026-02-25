@@ -83,7 +83,7 @@ const initialFormState = {
   gender: "",
   designation: "",
   cin: "",
-  startupName: "",
+  instituteName: "",
   legalStatus: "",
   dateOfEstablishment: "",
   primarySector: "",
@@ -281,7 +281,7 @@ function App() {
           // Company
           designation: data.designation || "",
           cin: data.cin || "",
-          startupName: data.startupName || "",
+          instituteName: data.instituteName || "",
           legalStatus: data.legalStatus || "",
           dateOfEstablishment: data.dateOfEstablishment || "",
           primarySector: data.primarySector || "",
@@ -667,7 +667,7 @@ function App() {
       tempErrors.email = "Enter a valid email address";
       isValid = false;
     }
-    checkRequired("startupName", "Startup Name");
+    checkRequired("instituteName", "Institute Name");
     checkRequired("legalStatus", "Legal Status");
     checkRequired("dateOfEstablishment", "Date of Establishment");
     checkRequired("primarySector", "Primary Sector");
@@ -743,8 +743,8 @@ function App() {
       };
 
       const response = isEditMode
-        ? await Api.put("/startup", payload)
-        : await Api.post("/startup", payload);
+        ? await Api.put("/startup/", payload)
+        : await Api.post("/startup/", payload);
 
       if (response.status === 200 || response.status === 201) {
         localStorage.setItem("userEmail", formData.email);
@@ -802,7 +802,7 @@ function App() {
               variant="h5"
               sx={{ fontWeight: "bold", fontSize: "20px" }}
             >
-              Company Details
+              Institute Details
             </Typography>
           </Box>
           <CardContent sx={{ p: 3 }}>
@@ -828,12 +828,12 @@ function App() {
               />
 
               <TextField
-                label="Startup Name *"
-                value={formData.startupName}
+                label="Institute Name *"
+                value={formData.instituteName}
                 disabled={isEditMode && !isEditable}
-                onChange={handleInputChange("startupName")}
-                error={!!errors.startupName}
-                helperText={errors.startupName}
+                onChange={handleInputChange("instituteName")}
+                error={!!errors.instituteName}
+                helperText={errors.instituteName}
                 placeholder="Enter Company Registered Name"
               />
               <TextField
@@ -891,9 +891,7 @@ function App() {
                 InputLabelProps={{ shrink: true }}
                 onChange={handleInputChange("dateOfEstablishment")}
                 error={!!errors.dateOfEstablishment}
-                helperText={
-                  errors.dateOfEstablishment || `Established within 2 years`
-                }
+               
                 inputProps={{ min: twoYearsAgo, max: today }}
               />
               <TextField

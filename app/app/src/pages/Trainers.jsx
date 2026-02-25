@@ -54,7 +54,7 @@ function Trainers() {
   /* ================= FETCH TRAINERS ================= */
   const fetchTrainers = async () => {
     try {
-      const res = await Api.get("/trainers");
+      const res = await Api.get("/trainers/");
 
       const formatted = res.data.map((t) => ({
         ...t,

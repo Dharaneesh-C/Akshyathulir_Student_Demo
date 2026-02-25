@@ -90,7 +90,7 @@ class StartupApplication(BaseModel):
     # ---------- Company ----------
     designation: Optional[str] = ""
     cin: Optional[str] = ""
-    startupName: Optional[str] = ""
+    instituteName: Optional[str] = ""
     legalStatus: Optional[str] = ""
     dateOfEstablishment: Optional[str] = ""
     primarySector: Optional[str] = ""

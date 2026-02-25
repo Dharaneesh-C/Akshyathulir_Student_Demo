@@ -48,7 +48,7 @@ const Courses = () => {
 
   const fetchCourses = async () => {
     try {
-      const res = await Api.get("/courses");
+      const res = await Api.get("/courses/");
       setCourses(res.data);
     } catch (err) {
       console.error(err);

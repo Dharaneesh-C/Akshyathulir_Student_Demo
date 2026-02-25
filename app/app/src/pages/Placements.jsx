@@ -305,7 +305,7 @@ const Placements = () => {
     try {
       setLoading(true);
 
-      await Api.post("/placements", eduFormData);
+      await Api.post("/placements/", eduFormData);
 
       alert("✅ Certification Submitted Successfully!");
 
