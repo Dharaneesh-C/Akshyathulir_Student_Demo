@@ -11,5 +11,6 @@ Trainer_collection=db["trainer"]
 placement_collection=db["placement"]
 courses_collection=db["courses"]
 certificates_collection=db["certificates"]
+dashboard_collection = db["dashboard"]
 
 

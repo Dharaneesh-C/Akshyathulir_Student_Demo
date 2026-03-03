@@ -22,17 +22,15 @@ import {
   Stack,
 } from "@mui/material";
 import Api from "./api";
-import {
-  Search,
-  Download,
-  FileCopy,
-  Print,
-  Visibility,
-  EmojiEvents,
-  CheckCircle,
-  Schedule,
-  Close,
-} from "@mui/icons-material";
+import Search from "@mui/icons-material/Search";
+import Download from "@mui/icons-material/Download";
+import FileCopy from "@mui/icons-material/FileCopy";
+import Print from "@mui/icons-material/Print";
+import Visibility from "@mui/icons-material/Visibility";
+import EmojiEvents from "@mui/icons-material/EmojiEvents";
+import CheckCircle from "@mui/icons-material/CheckCircle";
+import Schedule from "@mui/icons-material/Schedule";
+import Close from "@mui/icons-material/Close";
 
 /* -------------------- DATA -------------------- */
 
@@ -77,7 +75,7 @@ const Certificates = () => {
         ...(formData.score && { score: Number(formData.score) }),
       };
 
-      await Api.post("/certificates", payload);
+      await Api.post("/certificates/", payload);
 
       await fetchCertificates();
 
@@ -105,7 +103,7 @@ const Certificates = () => {
 
   const fetchCertificates = async () => {
     try {
-      const res = await Api.get("/certificates");
+      const res = await Api.get("/certificates/");
 
       const formatted = res.data.map((c) => ({
         ...c,

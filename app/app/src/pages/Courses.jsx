@@ -16,7 +16,10 @@ import {
   Divider,
 } from "@mui/material";
 import Api from "./api";
-import { Search, Visibility, Edit, Delete } from "@mui/icons-material";
+import Search from "@mui/icons-material/Search";
+import Visibility from "@mui/icons-material/Visibility";
+import Edit from "@mui/icons-material/Edit";
+import Delete from "@mui/icons-material/Delete";
 
 /* -------------------- INITIAL STATE -------------------- */
 const initialState = {
@@ -296,7 +299,7 @@ const Courses = () => {
 
           <Grid container spacing={2}>
             {/* Row 1 */}
-            <Grid size={6}>
+            <Grid item xs={12} md={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Course Name *
               </Typography>
@@ -312,7 +315,7 @@ const Courses = () => {
               />
             </Grid>
 
-            <Grid size={6}>
+            <Grid item xs={12} md={6}>
               <Grid
                 item
                 xs={12}
@@ -343,7 +346,7 @@ const Courses = () => {
             </Grid>
 
             {/* Row 2 */}
-            <Grid size={6}>
+            <Grid item xs={12} md={6}>
               <Grid
                 item
                 xs={12}
@@ -375,7 +378,7 @@ const Courses = () => {
               </Grid>
             </Grid>
 
-            <Grid size={6}>
+            <Grid item xs={12} md={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Fees *
               </Typography>
@@ -392,7 +395,7 @@ const Courses = () => {
             </Grid>
 
             {/* Row 3 */}
-            <Grid size={6}>
+            <Grid item xs={12} md={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Trainer
               </Typography>
@@ -408,7 +411,7 @@ const Courses = () => {
               />
             </Grid>
 
-            <Grid size={6}>
+            <Grid item xs={12} md={6}>
               <Grid
                 item
                 xs={12}
@@ -438,7 +441,7 @@ const Courses = () => {
             </Grid>
 
             {/* Row 4 */}
-            <Grid size={12}>
+            <Grid item xs={12}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Description
               </Typography>
@@ -456,7 +459,7 @@ const Courses = () => {
             </Grid>
 
             {/* Row 5 */}
-            <Grid size={6}>
+            <Grid item xs={12} md={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Syllabus (comma separated)
               </Typography>
@@ -472,7 +475,7 @@ const Courses = () => {
               />
             </Grid>
 
-            <Grid size={6}>
+            <Grid item xs={12} md={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Outcomes (comma separated)
               </Typography>
