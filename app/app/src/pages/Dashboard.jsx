@@ -50,72 +50,86 @@ const COLORS = {
 };
 const colors = ["#aed581", "#81c784", "#4caf50", "#2e7d32"];
 
-
 export default function Dashboard() {
-
   const [kpi_dashboard, setKpiDashboard] = useState({});
   const [growthData, setGrowthData] = useState([]);
   const [revenueData, setRevenueData] = useState([]);
   const [StageDistribution, setStageDistribution] = useState([]);
   const [PerformanceSummary, setPerformanceSummary] = useState([]);
-  const email = localStorage.getItem("expertEmail");
+  const email = localStorage.getItem("userEmail");
   useEffect(() => {
+    axios
+      .get(`http://127.0.0.1:8000/api/dashboard/kpi_dashboard/${email}`)
+      .then((res) => setKpiDashboard(res.data));
 
-    axios.get(`http://127.0.0.1:8000/dashboard/kpi_dashboard/${email}`)
-      .then(res => setKpiDashboard(res.data));
+    axios
+      .get(`http://127.0.0.1:8000/api/dashboard/growth/${email}`)
+      .then((res) => setGrowthData(res.data));
 
-    axios.get(`http://127.0.0.1:8000/dashboard/growth/${email}`)
-      .then(res => setGrowthData(res.data));
+    axios
+      .get(`http://127.0.0.1:8000/api/dashboard/revenue/${email}`)
+      .then((res) => setRevenueData(res.data));
 
-    axios.get(`http://127.0.0.1:8000/dashboard/revenue/${email}`)
-      .then(res => setRevenueData(res.data));
+    axios
+      .get(`http://127.0.0.1:8000/api/dashboard/PerformanceSummary/${email}`)
+      .then((res) => setPerformanceSummary(res.data));
 
-    axios.get(`http://127.0.0.1:8000/dashboard/PerformanceSummary/${email}`)
-      .then(res => setPerformanceSummary(res.data));
-
-    axios.get(`http://127.0.0.1:8000/dashboard/StageDistribution/${email}`)
-      .then(res => setStageDistribution(res.data));
-
+    axios
+      .get(`http://127.0.0.1:8000/api/dashboard/StageDistribution/${email}`)
+      .then((res) => setStageDistribution(res.data));
   }, [email]);
   return (
     <Box sx={{ minHeight: "100vh", background: COLORS.light, p: 2 }}>
       {/* HEADER */}
-      <Box sx={{
-        p: 4,
-        mb: 4,
-        borderRadius: 4,
-        background: `linear-gradient(135deg, ${COLORS.ehead}, ${COLORS.head})`,
-        color: "#fff",
-      }}>
-        <Typography variant="h4" fontWeight="bold">
-          Expert Dashboard
-        </Typography>
-        <Typography sx={{ opacity: 0.9 }}>
-          Expert performance, startup impact & analytics overview
-        </Typography>
-      </Box>
+
       {/* KPI BAND */}
-      <Grid container spacing={3} mb={2}>
+      <Grid container spacing={2} mb={2}>
         {[
-          { label: "Total Mentees", value: kpi_dashboard.totalMentees || 0, icon: <GroupsIcon /> },
-          { label: "Sessions Conducted", value: kpi_dashboard.totalSessions || 0, icon: <EventIcon /> },
-          { label: "Avg. Rating", value: kpi_dashboard.averageRating || 0, icon: <StarIcon /> },
-          { label: "Monthly Revenue", value: `₹${kpi_dashboard.monthlyRevenue || 0}`, icon: <CurrencyRupeeIcon /> },
-          { label: "Growth Impact", value: `${kpi_dashboard.growthImpact || 0}%`, icon: <TrendingUpIcon /> },
-          { label: "Session Utilization", value: `${kpi_dashboard.sessionUtilization || 0}%`, icon: <InsightsIcon /> },
+          {
+            label: "Total Students",
+            value: kpi_dashboard.totalStudents || 0,
+            icon: <GroupsIcon />,
+          },
+          {
+            label: "Active Courses",
+            value: kpi_dashboard.activeCourses || 0,
+            icon: <EventIcon />,
+          },
+          {
+            label: "Total Trainers",
+            value: kpi_dashboard.totalTrainers || 0,
+            icon: <StarIcon />,
+          },
+          {
+            label: "Total Placements",
+            value: kpi_dashboard.totalPlacements || 0,
+            icon: <CurrencyRupeeIcon />,
+          },
+          {
+            label: "Course Completion Rate",
+            value: `${kpi_dashboard.completionRate || 0}%`,
+            icon: <TrendingUpIcon />,
+          },
+          {
+            label: "Student Attendance",
+            value: `${kpi_dashboard.attendanceRate || 0}%`,
+            icon: <InsightsIcon />,
+          },
         ].map((kpi, i) => (
           <Grid item xs={12} sm={6} md={2.4} key={i}>
-            <Card sx={{
-              height: "100%",
-              borderRadius: 4,
-              transition: "transform 0.3s ease, box-shadow 0.3s ease",
-              "&:hover": {
-                transform: "translateY(-6px)",
-                boxShadow: "0 12px 30px rgba(0,0,0,0.15)"
-              },
-              background: "rgba(255,255,255,0.9)",
-              backdropFilter: "blur(10px)",
-            }}>
+            <Card
+              sx={{
+                height: "100%",
+                borderRadius: 4,
+                transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                "&:hover": {
+                  transform: "translateY(-6px)",
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
+                },
+                background: "rgba(255,255,255,0.9)",
+                backdropFilter: "blur(10px)",
+              }}
+            >
               <CardContent>
                 <Stack direction="row" spacing={4} alignItems="center">
                   <Avatar sx={{ bgcolor: "#e8f5e9", color: "#2e7d32" }}>
@@ -125,9 +139,11 @@ export default function Dashboard() {
                     <Typography variant="body2" color="text.secondary">
                       {kpi.label}
                     </Typography>
-                    <Typography variant="h6"
+                    <Typography
+                      variant="h6"
                       fontWeight="bold"
-                      sx={{ color: COLORS.main }}>
+                      sx={{ color: COLORS.main }}
+                    >
                       {kpi.value}
                     </Typography>
                   </Box>
@@ -144,15 +160,18 @@ export default function Dashboard() {
 
       <TableContainer component={Paper} sx={{ borderRadius: 4 }}>
         <Table>
-          <TableHead sx={{
-            background: COLORS.ehead, "& .MuiTableCell-head": {
-              color: "#fff",
-              fontWeight: "bold",
-            },
-          }} >
+          <TableHead
+            sx={{
+              background: COLORS.ehead,
+              "& .MuiTableCell-head": {
+                color: "#fff",
+                fontWeight: "bold",
+              },
+            }}
+          >
             <TableRow>
-              <TableCell>Startup</TableCell>
-              <TableCell>Stage</TableCell>
+              <TableCell>Student Name</TableCell>
+              <TableCell>Course</TableCell>
               <TableCell>Progress</TableCell>
               <TableCell>Last Session</TableCell>
               <TableCell>Status</TableCell>
@@ -166,17 +185,18 @@ export default function Dashboard() {
                 <TableCell>
                   <LinearProgress
                     value={row.progress}
-                    variant="determinate" color="success"
+                    variant="determinate"
+                    color="success"
                   />
                 </TableCell>
                 <TableCell>{row.lastSession}</TableCell>
-                <TableCell >{row.status}</TableCell>
+                <TableCell>{row.status}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
-      <Grid container spacing={2} my={3}>
+      <Grid container spacing={10} my={3}>
         <Grid item xs={12} md={4}>
           <Card
             sx={{
@@ -184,10 +204,10 @@ export default function Dashboard() {
               transition: "transform 0.3s ease, box-shadow 0.3s ease",
               "&:hover": {
                 transform: "translateY(-6px)",
-                boxShadow: "0 12px 30px rgba(0,0,0,0.15)"
+                boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
               },
-              width: 450,
-              height: 180,
+              width: 400,
+              height: 190,
               display: "flex",
               flexDirection: "column",
             }}
@@ -199,16 +219,31 @@ export default function Dashboard() {
                 flexDirection: "column",
               }}
             >
-              <Typography fontWeight="bold">Session Effectiveness</Typography>
+              <Typography fontWeight="bold">Training Effectiveness</Typography>
 
-              <Typography mt={2}>Session Utilization: {kpi_dashboard.sessionUtilization}%</Typography>
-              <LinearProgress value={kpi_dashboard.sessionUtilization} variant="determinate" color="success" />
+              <Typography mt={2}>
+                Student Attendance: {kpi_dashboard.attendanceRate}%
+              </Typography>
 
-              <Typography mt={2}>Action Item Closure: 67%</Typography>
-              <LinearProgress value={67} variant="determinate" color="success" />
+              <LinearProgress
+                value={kpi_dashboard.attendanceRate}
+                variant="determinate"
+                color="success"
+              />
+
+              <Typography mt={2}>
+                Course Completion: {kpi_dashboard.completionRate}%
+              </Typography>
+
+              <LinearProgress
+                value={kpi_dashboard.completionRate}
+                variant="determinate"
+                color="success"
+              />
 
               <Typography variant="body2" mt={2} color="text.secondary">
-                Structured sessions show higher impact than open discussions.
+                High attendance and completion rates indicate effective training
+                delivery.
               </Typography>
             </CardContent>
           </Card>
@@ -221,45 +256,10 @@ export default function Dashboard() {
               transition: "transform 0.3s ease, box-shadow 0.3s ease",
               "&:hover": {
                 transform: "translateY(-6px)",
-                boxShadow: "0 12px 30px rgba(0,0,0,0.15)"
+                boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
               },
-              width: 450,
-              height: 180,
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <CardContent
-              sx={{
-                flexGrow: 1,
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <Typography fontWeight="bold">Revenue & Value Contribution</Typography>
-
-              <Typography mt={2}>Monthly Revenue: ₹{kpi_dashboard.monthlyRevenue}</Typography>
-              <Typography>Growth Contribution: +{kpi_dashboard.growthImpact}%</Typography>
-
-              <Typography variant="body2" mt={2} color="text.secondary">
-                Revenue growth aligns with startup success, indicating value-driven
-                mentoring.
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card
-            sx={{
-              borderRadius: 4,
-              transition: "transform 0.3s ease, box-shadow 0.3s ease",
-              "&:hover": {
-                transform: "translateY(-6px)",
-                boxShadow: "0 12px 30px rgba(0,0,0,0.15)"
-              },
-              width: 450,
-              height: 180,
+              width: 400,
+              height: 190,
               display: "flex",
               flexDirection: "column",
             }}
@@ -272,14 +272,57 @@ export default function Dashboard() {
               }}
             >
               <Typography fontWeight="bold">
-                System Recommendations
+                Training Revenue Overview
               </Typography>
 
+              <Typography mt={2}>
+                Monthly Revenue: ₹{kpi_dashboard.monthlyRevenue}
+              </Typography>
+              <Typography>
+                Growth Contribution: +{kpi_dashboard.growthImpact}%
+              </Typography>
+
+              <Typography variant="body2" mt={2} color="text.secondary">
+                Revenue growth aligns with startup success, indicating
+                value-driven mentoring.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Card
+            sx={{
+              borderRadius: 4,
+              transition: "transform 0.3s ease, box-shadow 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-6px)",
+                boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
+              },
+              width: 400,
+              height: 190,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <CardContent
+              sx={{
+                flexGrow: 1,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <Typography fontWeight="bold">System Recommendations</Typography>
+
               <Box sx={{ mt: 2, flexGrow: 1, overflowY: "auto" }}>
-                <Typography>✔ Prioritize at-risk startups</Typography>
-                <Typography>✔ Standardize mentoring templates</Typography>
-                <Typography>✔ Focus on investor readiness</Typography>
-                <Typography>✔ Maintain quality while scaling</Typography>
+                <Typography>
+                  ✔ Improve student placement opportunities
+                </Typography>
+                <Typography>✔ Update course curriculum regularly</Typography>
+                <Typography>
+                  ✔ Provide more practical training sessions
+                </Typography>
+                <Typography>✔ Strengthen industry partnerships</Typography>
               </Box>
             </CardContent>
           </Card>
@@ -287,7 +330,7 @@ export default function Dashboard() {
       </Grid>
 
       {/* ANALYTICS ZONE */}
-      <Grid container spacing={2} my={2}>
+      <Grid container spacing={10} my={2}>
         {/* GROWTH CHART */}
         <Grid item xs={12} md={4}>
           <Card
@@ -296,9 +339,9 @@ export default function Dashboard() {
               transition: "transform 0.3s ease, box-shadow 0.3s ease",
               "&:hover": {
                 transform: "translateY(-6px)",
-                boxShadow: "0 12px 30px rgba(0,0,0,0.15)"
+                boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
               },
-              width: 450,
+              width: 400,
               height: 400,
               display: "flex",
               flexDirection: "column",
@@ -312,7 +355,7 @@ export default function Dashboard() {
               }}
             >
               <Typography fontWeight="bold" mb={1}>
-                Startup Growth Trend (6 Months)
+                Student Enrollment Trend (6 Months)
               </Typography>
 
               <Box sx={{ height: 300 }}>
@@ -321,11 +364,7 @@ export default function Dashboard() {
                     <XAxis dataKey="month" />
                     <YAxis />
                     <Tooltip />
-                    <Line
-                      dataKey="value"
-                      stroke="#2e7d32"
-                      strokeWidth={3}
-                    />
+                    <Line dataKey="value" stroke="#2e7d32" strokeWidth={3} />
                   </LineChart>
                 </ResponsiveContainer>
               </Box>
@@ -341,9 +380,9 @@ export default function Dashboard() {
               transition: "transform 0.3s ease, box-shadow 0.3s ease",
               "&:hover": {
                 transform: "translateY(-6px)",
-                boxShadow: "0 12px 30px rgba(0,0,0,0.15)"
+                boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
               },
-              width: 450,
+              width: 400,
               height: 400,
               display: "flex",
               flexDirection: "column",
@@ -357,7 +396,7 @@ export default function Dashboard() {
               }}
             >
               <Typography fontWeight="bold" mb={1}>
-                Revenue Trend Analysis
+                Course Revenue Trend
               </Typography>
               <Box sx={{ height: 300 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -381,9 +420,9 @@ export default function Dashboard() {
               transition: "transform 0.3s ease, box-shadow 0.3s ease",
               "&:hover": {
                 transform: "translateY(-6px)",
-                boxShadow: "0 12px 30px rgba(0,0,0,0.15)"
+                boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
               },
-              width: 450,
+              width: 400,
               height: 400,
               display: "flex",
               flexDirection: "column",
@@ -397,7 +436,7 @@ export default function Dashboard() {
               }}
             >
               <Typography fontWeight="bold" mb={1}>
-                Startup Stage Distribution
+                Course Category Distribution
               </Typography>
 
               <Box
@@ -413,12 +452,21 @@ export default function Dashboard() {
                     <Pie
                       data={StageDistribution}
                       dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
                       outerRadius={120}
+                      innerRadius={70}
+                      paddingAngle={3}
                     >
-                      {StageDistribution.map((_, i) => (
-                        <Cell key={i} fill={colors[i]} />
+                      {StageDistribution.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={colors[index % colors.length]}
+                        />
                       ))}
                     </Pie>
+
                     <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
