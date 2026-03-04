@@ -1,0 +1,444 @@
+import React from "react";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Grid,
+  Chip,
+  IconButton,
+  TextField,
+  Button,
+  Dialog,
+  MenuItem,
+  ButtonBase
+} from "@mui/material";
+
+// Icons
+import SearchIcon from "@mui/icons-material/Search";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import AddIcon from "@mui/icons-material/Add";
+import CloseIcon from "@mui/icons-material/Close";
+
+import Api from "../api";
+
+/* -------------------- INITIAL COURSE STATE -------------------- */
+const initialCourseState = {
+  name: "",
+  category: "IT & Software",
+  duration: "",
+  fees: "",
+  trainer: "",
+  status: "Active",
+  description: "",
+  syllabus: "",
+  outcomes: "",
+};
+
+function Courses() {
+  const [open, setOpen] = React.useState(false);
+  const [courses, setCourses] = React.useState([]);
+  const [viewOpen, setViewOpen] = React.useState(false);
+  const [selectedCourse, setSelectedCourse] = React.useState(null);
+  const [formData, setFormData] = React.useState(initialCourseState);
+
+  
+
+  
+  /* -------------------- LOAD COURSES (fetch) -------------------- */
+  const loadCourses = async () => {
+    try{
+    const res = await Api.get("/courses");
+    setCourses(res.data);
+  } catch (err) {
+    console.error("Error fetching courses", err);
+  }
+  };
+  React.useEffect(() => {
+    loadCourses();
+  }, []);
+
+  /* -------------------- HANDLE CHANGE -------------------- */
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  /* -------------------- ADD COURSE -------------------- */
+  const handleAddCourse = async () => {
+    if (!formData.name || !formData.duration || !formData.fees) {
+      alert("Please fill required fields");
+      return;
+    }
+
+    const payload = {
+      ...formData,
+      fees: String(formData.fees), // send fees as string
+      syllabus: formData.syllabus
+        ? formData.syllabus.split(",").map((s) => s.trim())
+        : [],
+      outcomes: formData.outcomes
+        ? formData.outcomes.split(",").map((s) => s.trim())
+        : [],
+    };
+
+    try {
+      await Api.post("/courses", payload);
+      setOpen(false);
+      setFormData(initialCourseState);
+      loadCourses();
+      alert("✅ Course added successfully");
+    } catch (err) {
+      console.error("ADD COURSE ERROR:", err.response?.data || err.message);
+      alert(
+        err.response?.data?.detail
+          ? JSON.stringify(err.response.data.detail)
+          : "❌ Failed to add course"
+      );
+    }
+  };
+  // editingCourseId
+  const [editingCourseId, setEditingCourseId] = React.useState(null);
+
+  /* -------------------- HANDLE EDIT -------------------- */
+  const handleEditCourse = (course) => {
+    setFormData({
+      ...course,
+      syllabus: course.syllabus.join(", "), // convert array to comma string
+      outcomes: course.outcomes.join(", "),
+    });
+    setEditingCourseId(course._id);
+    setOpen(true);
+  };
+
+  /* -------------------- ADD OR UPDATE COURSE -------------------- */
+  const handleSaveCourse = async () => {
+    if (!formData.name || !formData.duration || !formData.fees) {
+      alert("Please fill required fields");
+      return;
+    }
+
+    const payload = {
+      ...formData,
+      fees: String(formData.fees),
+      syllabus: formData.syllabus
+        ? formData.syllabus.split(",").map((s) => s.trim())
+        : [],
+      outcomes: formData.outcomes
+        ? formData.outcomes.split(",").map((s) => s.trim())
+        : [],
+    };
+
+    try {
+      if (editingCourseId) {
+        // Update existing course
+        await Api.put(`/courses/${editingCourseId}`, payload);
+        alert("✅ Course updated successfully");
+      } else {
+        // Add new course
+        await Api.post("/courses", payload);
+        alert("✅ Course added successfully");
+      }
+      setOpen(false);
+      setFormData(initialCourseState);
+      setEditingCourseId(null);
+      loadCourses();
+    } catch (err) {
+      console.error("SAVE COURSE ERROR:", err.response?.data || err.message);
+      alert(
+        err.response?.data?.detail
+          ? JSON.stringify(err.response.data.detail)
+          : "❌ Failed to save course"
+      );
+    }
+  };
+
+  /* -------------------- DELETE COURSE -------------------- */
+  const handleDeleteCourse = async (id) => {
+    if (!window.confirm("Delete this course?")) return;
+    await Api.delete(`/courses/${id}`);
+    loadCourses();
+  };
+
+  return (
+    <Box sx={{ p: 4, backgroundColor: "#eef8ee", minHeight: "100vh" }}>
+      {/* Header */}
+      <Box display="flex" justifyContent="space-between" mb={3}>
+        <Box>
+          <Typography variant="h5" fontWeight={700}>
+            Courses
+          </Typography>
+          <Typography color="text.secondary">
+            Manage training courses
+          </Typography>
+        </Box>
+
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          sx={{ bgcolor: "#2e7d32" }}
+          onClick={() => setOpen(true)}
+        >
+          Add Course
+        </Button>
+      </Box>
+
+      {/* Search */}
+      <TextField
+        fullWidth
+        placeholder="Search courses..."
+        InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1 }} /> }}
+        sx={{ mb: 4, backgroundColor: "#fff" }}
+      />
+
+      {/* Course Cards */}
+      <Grid container spacing={3}>
+        {courses.map((c) => (
+          <Grid size={4} key={c._id}>
+            <Card sx={{ borderRadius: 3 }}>
+              <CardContent>
+                <Typography fontWeight={600}>{c.name}</Typography>
+                <Typography color="text.secondary" mb={1}>
+                  {c.category}
+                </Typography>
+
+                <Chip
+                  label={c.status}
+                  color="success"
+                  size="small"
+                  sx={{ mb: 2 }}
+                />
+
+                <Typography variant="body2">
+                  ⏳ {c.duration}
+                </Typography>
+                <Typography variant="body2">
+                  💰 ₹{c.fees}
+                </Typography>
+                <Typography variant="body2">
+                  👨‍🏫 {c.trainer || "Not Assigned"}
+                </Typography>
+
+                {/* Actions */}
+                <Box display="flex" justifyContent="flex-end">
+                  <IconButton
+                    onClick={() => {
+                      setSelectedCourse(c);
+                      setViewOpen(true);
+                    }}
+                  >
+                    <VisibilityOutlinedIcon />
+                  </IconButton>
+
+                  <IconButton onClick={() => handleEditCourse(c)}>
+                    <EditOutlinedIcon />
+                  </IconButton>
+                  <IconButton
+                    color="error"
+                    onClick={() => handleDeleteCourse(c._id)}
+                  >
+                    <DeleteOutlineIcon />
+                  </IconButton>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* ADD COURSE DIALOG */}
+      {/* ADD COURSE DIALOG */}
+      <Dialog open={open} onClose={() => setOpen(false)} fullWidth>
+        <Box sx={{ p: 3 }}>
+          <Box display="flex" justifyContent="space-between" mb={2}>
+            <Typography fontWeight={600}>Add New Course</Typography>
+            <IconButton onClick={() => setOpen(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          <Grid container spacing={2}>
+            <Grid size={12}>
+              <TextField
+                label="Course Name *"
+                name="name"
+                fullWidth
+                size="small"
+                value={formData.name}
+                onChange={handleChange}
+              />
+            </Grid>
+
+            <Grid size={6}>
+              <TextField
+                select
+                label="Category"
+                name="category"
+                fullWidth
+                size="small"
+                value={formData.category}
+                onChange={handleChange}
+              >
+                <MenuItem value="IT & Software">IT & Software</MenuItem>
+                <MenuItem value="Business">Business</MenuItem>
+                <MenuItem value="Design">Design</MenuItem>
+                <MenuItem value="Marketing">Marketing</MenuItem>
+              </TextField>
+            </Grid>
+
+            <Grid size={6}>
+              <TextField
+                select
+                label="Duration *"
+                name="duration"
+                fullWidth
+                size="small"
+                value={formData.duration}
+                onChange={handleChange}
+              >
+                <MenuItem value="1 month">1 Month</MenuItem>
+                <MenuItem value="2 months">2 Months</MenuItem>
+                <MenuItem value="3 months">3 Months</MenuItem>
+                <MenuItem value="6 months">6 Months</MenuItem>
+              </TextField>
+            </Grid>
+
+            <Grid size={6}>
+              <TextField
+                label="Fees *"
+                name="fees"
+                fullWidth
+                size="small"
+                value={formData.fees}
+                onChange={handleChange}
+              />
+            </Grid>
+
+            <Grid size={6}>
+              <TextField
+                label="Trainer"
+                name="trainer"
+                fullWidth
+                size="small"
+                value={formData.trainer}
+                onChange={handleChange}
+              />
+            </Grid>
+
+            <Grid size={6}>
+              <TextField
+                select
+                label="Status"
+                name="status"
+                fullWidth
+                size="small"
+                value={formData.status}
+                onChange={handleChange}
+              >
+                <MenuItem value="Active">Active</MenuItem>
+                <MenuItem value="Draft">Draft</MenuItem>
+                <MenuItem value="Inactive">Inactive</MenuItem>
+              </TextField>
+            </Grid>
+
+            <Grid size={12}>
+              <TextField
+                label="Description"
+                name="description"
+                fullWidth
+                multiline
+                rows={3}
+                size="small"
+                value={formData.description}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid size={12}>
+              <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                Syllabus (comma separated)
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                name="syllabus"
+                placeholder="HTML, CSS, React, Node"
+                value={formData.syllabus || ""}
+                onChange={handleChange}
+              />
+            </Grid>
+
+            <Grid size={12}>
+              <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                Outcomes (comma separated)
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                name="outcomes"
+                placeholder="Build apps, Deploy projects"
+                value={formData.outcomes || ""}
+                onChange={handleChange}
+              />
+            </Grid>
+          </Grid>
+
+          <Box
+  display="flex"
+  justifyContent="space-between"
+  alignItems="center"
+  mt={3}
+>
+  {/* Left: Cancel Button */}
+  <Button variant="outlined" onClick={() => setOpen(false)}>
+    Cancel
+  </Button>
+
+  
+  
+
+  {/* Right: Save / Add Button */}
+  <Button
+    variant="contained"
+    sx={{ bgcolor: "#2e7d32" }}
+    onClick={handleSaveCourse} // your add/edit handler
+  >
+    {editingCourseId ? "Update Course" : "Add Course"}
+  </Button>
+</Box>
+        </Box>
+      </Dialog>
+      {/* VIEW COURSE */}
+      <Dialog open={viewOpen} onClose={() => setViewOpen(false)} fullWidth>
+        {selectedCourse && (
+          <Box sx={{ p: 3 }}>
+            <Typography fontWeight={600} variant="h6">
+              {selectedCourse.name}
+            </Typography>
+
+            <Typography mt={1}>{selectedCourse.description}</Typography>
+
+            <Typography mt={2}>Duration: {selectedCourse.duration}</Typography>
+            <Typography>Fees: ₹{selectedCourse.fees}</Typography>
+
+            {selectedCourse.syllabus?.length > 0 && (
+              <Typography mt={2}>
+                <strong>Syllabus:</strong> {selectedCourse.syllabus.join(", ")}
+              </Typography>
+            )}
+
+            {selectedCourse.outcomes?.length > 0 && (
+              <Typography mt={1}>
+                <strong>Outcomes:</strong> {selectedCourse.outcomes.join(", ")}
+              </Typography>
+            )}
+          </Box>
+        )}
+      </Dialog>
+
+    </Box>
+  );
+}
+
+export default Courses;

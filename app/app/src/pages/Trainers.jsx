@@ -23,6 +23,8 @@ import StarIcon from "@mui/icons-material/Star";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
+import EmailIcon from "@mui/icons-material/Email";
+import PhoneIcon from "@mui/icons-material/Phone";
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
@@ -75,14 +77,12 @@ function Trainers() {
     fetchTrainers();
   }, []);
 
-  /* ================= ADD TRAINER ================= */
-
   /* ================= DELETE TRAINER ================= */
   const handleDeleteTrainer = async (id) => {
     if (!window.confirm("Delete this trainer?")) return;
 
     try {
-      await Api.delete(`/trainers/${id}`);
+      await Api.delete(`/trainers/${id}/`);
       setTrainerList((prev) => prev.filter((t) => t._id !== id));
     } catch (err) {
       console.error(err);
@@ -101,6 +101,8 @@ function Trainers() {
     trainer.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
   const handleAddTrainer = async () => {
+    if (!validateForm()) return;
+
     try {
       const payload = {
         name: formData.name,
@@ -110,32 +112,83 @@ function Trainers() {
         status: formData.status,
         trained: Number(formData.trained || 0),
         courses: Number(formData.courses || 0),
-
-        ...(formData.email && { email: formData.email }),
-        ...(formData.phone && { phone: formData.phone }),
-        ...(formData.qualification && {
-          qualification: formData.qualification,
-        }),
+        email: formData.email,
+        phone: formData.phone,
+        qualification: formData.qualification,
       };
 
       if (isEdit) {
-        // 🔁 UPDATE
-        await Api.put(`/trainers/${editId}`, payload);
+        await Api.put(`/trainers/${editId}/`, payload);
       } else {
-        // ➕ ADD
-        await Api.post("/trainers", payload);
+        await Api.post("/trainers/", payload);
       }
 
       await fetchTrainers();
 
       setOpen(false);
       setFormData(initialTrainerState);
+      setErrors({});
       setIsEdit(false);
       setEditId(null);
     } catch (err) {
-      console.error(err.response?.data || err);
-      alert("❌ Failed to save trainer");
+      console.log(err);
+      alert("Something went wrong");
     }
+  };
+  const [errors, setErrors] = useState({});
+  const validateForm = () => {
+    let newErrors = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Full Name is required";
+    }
+
+    if (!formData.skill.trim()) {
+      newErrors.skill = "Specialization is required";
+    }
+
+    if (!formData.qualification.trim()) {
+      newErrors.qualification = "Qualification is required";
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Invalid email format";
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^[0-9]{10}$/.test(formData.phone)) {
+      newErrors.phone = "Phone must be 10 digits";
+    }
+    if (!formData.location.trim()) {
+      newErrors.location = "Location is required";
+    } else if (!/^[A-Za-z\s]+$/.test(formData.location)) {
+      newErrors.location = "Location must contain only letters";
+    }
+
+    if (!formData.exp) {
+      newErrors.exp = "Experience is required";
+    }
+
+    if (!formData.status) {
+      newErrors.status = "Status is required";
+    }
+
+    if (!formData.courses) {
+      newErrors.courses = "Courses is required";
+    } else if (!/^[0-9]+$/.test(formData.courses)) {
+      newErrors.courses = "Courses must contain only numbers";
+    }
+
+    if (!formData.trained) {
+      newErrors.trained = "Students trained is required";
+    } else if (!/^[0-9]+$/.test(formData.trained)) {
+      newErrors.trained = "Trained must contain only numbers";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   return (
@@ -356,21 +409,23 @@ function Trainers() {
           {/* Form */}
           <Grid container spacing={2}>
             {/* Row 1 */}
-            <Grid item xs={12} md={6}>
+            <Grid size={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Full Name *
               </Typography>
               <TextField
                 fullWidth
                 size="small"
-                placeholder="e.g. Rajesh Kumar"
                 name="name"
+                placeholder="e.g. John Doe"
                 value={formData.name}
                 onChange={handleChange}
+                error={!!errors.name}
+                helperText={errors.name}
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Specialization *
               </Typography>
@@ -381,42 +436,46 @@ function Trainers() {
                 name="skill"
                 value={formData.skill}
                 onChange={handleChange}
+                error={!!errors.skill}
+                helperText={errors.skill}
               />
             </Grid>
 
             {/* Row 2 */}
-            <Grid item xs={12} md={6}>
+            <Grid size={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Email *
               </Typography>
               <TextField
                 fullWidth
                 size="small"
-                placeholder="email@institute.com"
+                name="email"
+                placeholder="e.g. example@gmail.com"
                 value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                onChange={handleChange}
+                error={!!errors.email}
+                helperText={errors.email}
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Phone *
               </Typography>
               <TextField
                 fullWidth
                 size="small"
-                placeholder="+91 XXXXX XXXXX"
+                name="phone"
+                placeholder="e.g. 91XXXXXXXXX"
                 value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
+                onChange={handleChange}
+                error={!!errors.phone}
+                helperText={errors.phone}
               />
             </Grid>
 
             {/* Row 3 */}
-            <Grid item xs={12} md={6}>
+            <Grid size={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Qualification
               </Typography>
@@ -427,10 +486,12 @@ function Trainers() {
                 value={formData.qualification}
                 onChange={handleChange}
                 placeholder="e.g. M.Tech (CSE)"
+                error={!!errors.qualification}
+                helperText={errors.qualification}
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 courses
               </Typography>
@@ -440,11 +501,18 @@ function Trainers() {
                 placeholder="e.g. 5"
                 name="courses"
                 value={formData.courses}
-                onChange={handleChange}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (/^[0-9]*$/.test(value)) {
+                    setFormData({ ...formData, courses: value });
+                  }
+                }}
+                error={!!errors.courses}
+                helperText={errors.courses}
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Trained
               </Typography>
@@ -455,32 +523,33 @@ function Trainers() {
                 name="trained"
                 value={formData.trained}
                 onChange={handleChange}
+                error={!!errors.trained}
+                helperText={errors.trained}
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Location
               </Typography>
               <TextField
                 fullWidth
                 size="small"
-                placeholder="e.g. Bangalore"
+                name="location"
+                placeholder="e.g. Chennai"
                 value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
+                onChange={handleChange}
+                error={!!errors.location}
+                helperText={errors.location}
               />
             </Grid>
 
             {/* Row 4 ✅ Experience BELOW */}
             <Grid container spacing={2}>
               <Grid
-                item
-                xs={12}
-                md={6}
+                size={6}
                 sx={{
-                  "& .MuiInputBase-root": { width: 210 },
+                  "& .MuiInputBase-root": { width: 266 },
                 }}
               >
                 <Typography fontSize={14} fontWeight={500} mb={0.5}>
@@ -493,6 +562,8 @@ function Trainers() {
                   name="exp"
                   value={formData.exp}
                   onChange={handleChange}
+                  error={!!errors.exp}
+                  helperText={errors.exp}
                   SelectProps={{
                     displayEmpty: true,
                     renderValue: (selected) => {
@@ -516,11 +587,9 @@ function Trainers() {
               </Grid>
 
               <Grid
-                item
-                xs={12}
-                md={6}
+                size={6}
                 sx={{
-                  "& .MuiInputBase-root": { width: 210 },
+                  "& .MuiInputBase-root": { width: 266 },
                 }}
               >
                 <Typography fontSize={14} fontWeight={500} mb={0.5}>
@@ -533,6 +602,8 @@ function Trainers() {
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
+                  error={!!errors.status}
+                  helperText={errors.status}
                   SelectProps={{
                     displayEmpty: true,
                     renderValue: (selected) => {
@@ -583,90 +654,129 @@ function Trainers() {
         onClose={() => setViewOpen(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
+        PaperProps={{ sx: { borderRadius: 4, overflow: "hidden" } }}
       >
         {selectedTrainer && (
-          <Box sx={{ p: 3 }}>
-            {/* Header */}
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 2,
-              }}
-            >
-              <Typography fontWeight={600} fontSize={18}>
-                Trainer Profile
-              </Typography>
+          <Box>
+            {/* Close Button */}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", p: 1 }}>
               <IconButton onClick={() => setViewOpen(false)}>
                 <CloseIcon />
               </IconButton>
             </Box>
 
-            {/* Profile */}
-            <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+            {/* ================= HEADER SECTION ================= */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 3,
+                px: 4,
+                pb: 3,
+                mt: -2,
+              }}
+            >
               <Avatar
                 sx={{
+                  width: 100,
+                  height: 100,
+                  fontSize: 32,
+                  fontWeight: 700,
                   bgcolor: "#e6f4ea",
                   color: "#1b5e20",
-                  width: 56,
-                  height: 56,
-                  fontWeight: 700,
                 }}
               >
                 {selectedTrainer.initials}
               </Avatar>
 
               <Box>
-                <Typography fontWeight={600} fontSize={16}>
+                <Typography variant="h5" fontWeight={700}>
                   {selectedTrainer.name}
                 </Typography>
-                <Typography color="text.secondary">
+
+                <Typography color="text.secondary" sx={{ mb: 1 }}>
                   {selectedTrainer.skill}
                 </Typography>
+
+                {/* Rating */}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <StarIcon sx={{ color: "#ff9800" }} />
+                  <Typography fontWeight={600}>
+                    {selectedTrainer.rating ?? 4.8}
+                  </Typography>
+                  <Typography color="text.secondary">(142 reviews)</Typography>
+                  {/* Status */}
+                  <Chip label={selectedTrainer.status} color="success" />
+                </Box>
+
+                {/* Centered Info Columns */}
+                <Grid container spacing={3} sx={{ mt: 3, textAlign: "center" }}>
+                  <Grid item xs={6} md={3}>
+                    <Typography color="text.secondary" fontSize={14}>
+                      Experience
+                    </Typography>
+                    <Typography fontWeight={600} mt={1}>
+                      {selectedTrainer.exp}
+                    </Typography>
+                  </Grid>
+
+                  <Grid item xs={6} md={3}>
+                    <Typography color="text.secondary" fontSize={14}>
+                      Students Trained
+                    </Typography>
+                    <Typography fontWeight={600} mt={1}>
+                      {selectedTrainer.trained}
+                    </Typography>
+                  </Grid>
+
+                  <Grid item xs={6} md={3}>
+                    <Typography color="text.secondary" fontSize={14}>
+                      Courses
+                    </Typography>
+                    <Typography fontWeight={600} mt={1}>
+                      {selectedTrainer.courses}
+                    </Typography>
+                  </Grid>
+
+                  <Grid item xs={6} md={3}>
+                    <Typography color="text.secondary" fontSize={14}>
+                      Qualification
+                    </Typography>
+                    <Typography fontWeight={600} mt={1}>
+                      {selectedTrainer.qualification}
+                    </Typography>
+                  </Grid>
+                </Grid>
               </Box>
             </Box>
 
-            {/* Stats */}
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">
-                  Experience
-                </Typography>
-                <Typography fontWeight={500}>{selectedTrainer.exp}</Typography>
-              </Grid>
+            {/* ================= CONTACT SECTION ================= */}
+            <Box
+              sx={{
+                borderTop: "1px solid #eee",
+                px: 2,
+                py: 3,
+                display: "flex",
+                justifyContent: "center",
+                gap: 4,
+                flexWrap: "wrap",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <EmailIcon fontSize="small" />
+                <Typography>{selectedTrainer.email}</Typography>
+              </Box>
 
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">
-                  Rating
-                </Typography>
-                <Typography fontWeight={500}>
-                  ⭐ {selectedTrainer.rating}
-                </Typography>
-              </Grid>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <PhoneIcon fontSize="small" />
+                <Typography>{selectedTrainer.phone}</Typography>
+              </Box>
 
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">
-                  Students Trained
-                </Typography>
-                <Typography fontWeight={500}>
-                  {selectedTrainer.trained}
-                </Typography>
-              </Grid>
-
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">
-                  Location
-                </Typography>
-                <Typography fontWeight={500}>
-                  {selectedTrainer.location}
-                </Typography>
-              </Grid>
-            </Grid>
-
-            {/* Status */}
-            <Chip label={selectedTrainer.status} color="success" />
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <LocationOnOutlinedIcon fontSize="small" />
+                <Typography>{selectedTrainer.location}</Typography>
+              </Box>
+            </Box>
           </Box>
         )}
       </Dialog>

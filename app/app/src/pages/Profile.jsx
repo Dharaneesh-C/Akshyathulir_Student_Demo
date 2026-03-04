@@ -221,7 +221,7 @@ function App() {
 
   const handleDelete = async () => {
     try {
-      await Api.delete(`/startup/${encodeURIComponent(formData.email)}`);
+      await Api.delete(`/startup/${encodeURIComponent(formData.email)}/`);
       alert("Startup deleted successfully.");
       handleReset();
     } catch (error) {

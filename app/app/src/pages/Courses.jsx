@@ -27,7 +27,7 @@ const initialState = {
   category: "",
   duration: "",
   fees: "",
-  status: "Active",
+  status: "",
   startDate: "",
   trainer: "",
   description: "",
@@ -69,7 +69,7 @@ const Courses = () => {
     if (!window.confirm("Delete this course?")) return;
 
     try {
-      await Api.delete(`/courses/${id}`);
+      await Api.delete(`/courses/${id}/`);
       setCourses((prev) => prev.filter((c) => c._id !== id));
     } catch (err) {
       console.error(err);
@@ -78,6 +78,8 @@ const Courses = () => {
   };
 
   const handleAddCourse = async () => {
+    if (!validateForm()) return;
+
     try {
       const payload = {
         name: newCourse.name,
@@ -96,11 +98,9 @@ const Courses = () => {
       };
 
       if (isEdit) {
-        // 🔁 UPDATE
-        await Api.put(`/courses/${editId}`, payload);
+        await Api.put(`/courses/${editId}/`, payload);
       } else {
-        // ➕ ADD
-        await Api.post("/courses", { ...payload, enrolled: 0 });
+        await Api.post("/courses/", { ...payload, enrolled: 0 });
       }
 
       await fetchCourses();
@@ -113,6 +113,54 @@ const Courses = () => {
       console.error(err.response?.data || err);
       alert("❌ Failed to save course");
     }
+  };
+  const [errors, setErrors] = useState({});
+  const validateForm = () => {
+    let newErrors = {};
+
+    if (!newCourse.name.trim()) {
+      newErrors.name = "Course name is required";
+    }
+
+    if (!newCourse.category.trim()) {
+      newErrors.category = "Category is required";
+    }
+
+    if (!newCourse.duration.trim()) {
+      newErrors.duration = "Duration is required";
+    }
+
+    if (!newCourse.fees.trim()) {
+      newErrors.fees = "Fees is required";
+    } else if (!/^[0-9]+$/.test(newCourse.fees)) {
+      newErrors.fees = "Fees must contain only numbers";
+    }
+
+    if (!newCourse.trainer.trim()) {
+      newErrors.trainer = "Trainer name is required";
+    } else if (!/^[A-Za-z\s]+$/.test(newCourse.trainer)) {
+      newErrors.trainer = "Trainer name must contain only letters";
+    }
+
+    if (!newCourse.status.trim()) {
+      newErrors.status = "Status is required";
+    }
+
+    if (!newCourse.description.trim()) {
+      newErrors.description = "Description is required";
+    }
+
+    if (!newCourse.syllabus || !newCourse.syllabus.trim()) {
+      newErrors.syllabus = "Syllabus is required";
+    }
+
+    if (!newCourse.outcomes || !newCourse.outcomes.trim()) {
+      newErrors.outcomes = "Outcomes are required";
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
   };
 
   return (
@@ -299,7 +347,7 @@ const Courses = () => {
 
           <Grid container spacing={2}>
             {/* Row 1 */}
-            <Grid item xs={12} md={6}>
+            <Grid size={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Course Name *
               </Typography>
@@ -309,76 +357,86 @@ const Courses = () => {
                 placeholder="e.g. Full Stack Development"
                 name="name"
                 value={newCourse.name}
+                error={!!errors.name}
+                helperText={errors.name}
                 onChange={(e) =>
                   setNewCourse({ ...newCourse, name: e.target.value })
                 }
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
-              <Grid
-                item
-                xs={12}
-                md={6}
-                sx={{
-                  "& .MuiInputBase-root": { width: 268 },
-                }}
+            <Grid size={6}>
+              <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                Category
+              </Typography>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                name="category"
+                value={newCourse.category}
+                error={!!errors.category}
+                helperText={errors.category}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, category: e.target.value })
+                }
+                SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (selected) => {
+                      if (selected === "") {
+                        return (
+                          <span style={{ color: "#aaa" }}>Select Category</span>
+                        );
+                      }
+                      return selected;
+                    },
+                  }}
               >
-                <Typography fontSize={14} fontWeight={500} mb={0.5}>
-                  Category
-                </Typography>
-                <TextField
-                  select
-                  fullWidth
-                  size="small"
-                  name="category"
-                  value={newCourse.category}
-                  onChange={(e) =>
-                    setNewCourse({ ...newCourse, category: e.target.value })
-                  }
-                >
-                  <MenuItem value="IT & Software">IT & Software</MenuItem>
-                  <MenuItem value="Business">Business</MenuItem>
-                  <MenuItem value="Design">Design</MenuItem>
-                  <MenuItem value="Marketing">Marketing</MenuItem>
-                </TextField>
-              </Grid>
+                <MenuItem value="IT & Software">IT & Software</MenuItem>
+                <MenuItem value="Business">Business</MenuItem>
+                <MenuItem value="Design">Design</MenuItem>
+                <MenuItem value="Marketing">Marketing</MenuItem>
+              </TextField>
             </Grid>
 
             {/* Row 2 */}
-            <Grid item xs={12} md={6}>
-              <Grid
-                item
-                xs={12}
-                md={6}
-                sx={{
-                  "& .MuiInputBase-root": { width: 268 },
-                }}
-              >
-                <Typography fontSize={14} fontWeight={500} mb={0.5}>
-                  Duration *
-                </Typography>
+            <Grid size={6}>
+              <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                Duration *
+              </Typography>
 
-                <TextField
-                  select
-                  fullWidth
-                  size="small"
-                  name="duration"
-                  value={newCourse.duration}
-                  onChange={(e) =>
-                    setNewCourse({ ...newCourse, duration: e.target.value })
-                  }
-                >
-                  <MenuItem value="1 month">1 Month</MenuItem>
-                  <MenuItem value="2 month">2 Months</MenuItem>
-                  <MenuItem value="3 month">3 Months</MenuItem>
-                  <MenuItem value="5 month">5 Months</MenuItem>
-                  <MenuItem value="6 month">6 Months</MenuItem>
-                </TextField>
-              </Grid>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                name="duration"
+                value={newCourse.duration}
+                error={!!errors.duration}
+                helperText={errors.duration}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, duration: e.target.value })
+                }
+                SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (selected) => {
+                      if (selected === "") {
+                        return (
+                          <span style={{ color: "#aaa" }}>Select Duration</span>
+                        );
+                      }
+                      return selected;
+                    },
+                  }}
+              >
+                <MenuItem value="1 month">1 Month</MenuItem>
+                <MenuItem value="2 month">2 Months</MenuItem>
+                <MenuItem value="3 month">3 Months</MenuItem>
+                <MenuItem value="5 month">5 Months</MenuItem>
+                <MenuItem value="6 month">6 Months</MenuItem>
+              </TextField>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Fees *
               </Typography>
@@ -388,6 +446,8 @@ const Courses = () => {
                 placeholder="e.g. ₹ 25,000"
                 name="fees"
                 value={newCourse.fees}
+                error={!!errors.fees}
+                helperText={errors.fees}
                 onChange={(e) =>
                   setNewCourse({ ...newCourse, fees: e.target.value })
                 }
@@ -395,7 +455,7 @@ const Courses = () => {
             </Grid>
 
             {/* Row 3 */}
-            <Grid item xs={12} md={6}>
+            <Grid size={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Trainer
               </Typography>
@@ -405,43 +465,49 @@ const Courses = () => {
                 placeholder="Trainer Name"
                 name="trainer"
                 value={newCourse.trainer}
+                error={!!errors.trainer}
+                helperText={errors.trainer}
                 onChange={(e) =>
                   setNewCourse({ ...newCourse, trainer: e.target.value })
                 }
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
-              <Grid
-                item
-                xs={12}
-                md={6}
-                sx={{
-                  "& .MuiInputBase-root": { width: 268 },
-                }}
+            <Grid size={6}>
+              <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                Status
+              </Typography>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                name="status"
+                value={newCourse.status}
+                error={!!errors.status}
+                helperText={errors.status}
+                onChange={(e) =>
+                  setNewCourse({ ...newCourse, status: e.target.value })
+                }
+                SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (selected) => {
+                      if (selected === "") {
+                        return (
+                          <span style={{ color: "#aaa" }}>Select Status</span>
+                        );
+                      }
+                      return selected;
+                    },
+                  }}
               >
-                <Typography fontSize={14} fontWeight={500} mb={0.5}>
-                  Status
-                </Typography>
-                <TextField
-                  select
-                  fullWidth
-                  size="small"
-                  name="status"
-                  value={newCourse.status}
-                  onChange={(e) =>
-                    setNewCourse({ ...newCourse, status: e.target.value })
-                  }
-                >
-                  <MenuItem value="Active">Active</MenuItem>
-                  <MenuItem value="Draft">Draft</MenuItem>
-                  <MenuItem value="Inactive">Inactive</MenuItem>
-                </TextField>
-              </Grid>
+                <MenuItem value="Active">Active</MenuItem>
+                <MenuItem value="Draft">Draft</MenuItem>
+                <MenuItem value="Inactive">Inactive</MenuItem>
+              </TextField>
             </Grid>
 
             {/* Row 4 */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Description
               </Typography>
@@ -452,6 +518,8 @@ const Courses = () => {
                 rows={3}
                 name="description"
                 value={newCourse.description}
+                error={!!errors.description}
+                helperText={errors.description}
                 onChange={(e) =>
                   setNewCourse({ ...newCourse, description: e.target.value })
                 }
@@ -459,7 +527,7 @@ const Courses = () => {
             </Grid>
 
             {/* Row 5 */}
-            <Grid item xs={12} md={6}>
+            <Grid size={12}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Syllabus (comma separated)
               </Typography>
@@ -469,13 +537,15 @@ const Courses = () => {
                 name="syllabus"
                 placeholder="HTML, CSS, React, Node"
                 value={newCourse.syllabus || ""}
+                error={!!errors.syllabus}
+                helperText={errors.syllabus}
                 onChange={(e) =>
                   setNewCourse({ ...newCourse, syllabus: e.target.value })
                 }
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={12}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>
                 Outcomes (comma separated)
               </Typography>
@@ -485,6 +555,8 @@ const Courses = () => {
                 name="outcomes"
                 placeholder="Build apps, Deploy projects"
                 value={newCourse.outcomes || ""}
+                error={!!errors.outcomes}
+                helperText={errors.outcomes}
                 onChange={(e) =>
                   setNewCourse({ ...newCourse, outcomes: e.target.value })
                 }
@@ -505,32 +577,94 @@ const Courses = () => {
         </Box>
       </Dialog>
 
-      {/* VIEW DETAILS */}
-      <Dialog
-        open={detailsOpen}
-        onClose={() => setDetailsOpen(false)}
-        fullWidth
-      >
-        {selectedCourse && (
-          <Box p={3}>
-            <Typography variant="h6">{selectedCourse.name}</Typography>
+    {/* VIEW DETAILS */}
+<Dialog
+  open={detailsOpen}
+  onClose={() => setDetailsOpen(false)}
+  fullWidth
+  maxWidth="md"
+  PaperProps={{
+    sx: {
+      backgroundColor: "#fff",
+      color: "#000",
+      borderRadius: "16px",
+      padding: 2,
+    },
+  }}
+>
+  {selectedCourse && (
+    <Box p={3}>
+      {/* Header */}
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Box>
+          <Typography
+            variant="caption"
+            sx={{ color: "#1e293b", letterSpacing: 1 }}
+          >
+            DATA • IT & SOFTWARE
+          </Typography>
 
-            <Divider sx={{ my: 2 }} />
+          <Typography variant="h4" fontWeight="bold" mt={1}>
+            {selectedCourse.name}
+          </Typography>
 
-            <Typography fontWeight="bold">Syllabus</Typography>
-            {(selectedCourse.syllabus || []).map((s, i) => (
-              <Typography key={i}>• {s}</Typography>
-            ))}
+          <Typography variant="body2" color="gray" mt={1}>
+            Master data analysis, visualization, and machine learning techniques.
+          </Typography>
+        </Box>
+      </Box>
 
-            <Typography fontWeight="bold" mt={2}>
-              Outcomes
-            </Typography>
-            {(selectedCourse.outcomes || []).map((o, i) => (
-              <Typography key={i}>• {o}</Typography>
-            ))}
-          </Box>
-        )}
-      </Dialog>
+      <Divider sx={{ my: 3, backgroundColor: "#1e293b" }} />
+
+      {/* Content Section */}
+      <Box display="flex" gap={6} flexWrap="wrap">
+        {/* SYLLABUS */}
+        <Box flex={1} minWidth="250px">
+          <Typography
+            variant="subtitle2"
+            sx={{ color: "#1e293b", mb: 2, letterSpacing: 1 }}
+          >
+            SYLLABUS
+          </Typography>
+
+          {(selectedCourse.syllabus || []).map((item, index) => (
+            <Box key={index} display="flex" alignItems="center" mb={2}>
+              <Typography
+                sx={{
+                  color: "#1e293b",
+                  fontWeight: "bold",
+                  width: 30,
+                }}
+              >
+                {String(index + 1).padStart(2, "0")}
+              </Typography>
+              <Typography>{item}</Typography>
+            </Box>
+          ))}
+        </Box>
+
+        {/* OUTCOMES */}
+        <Box flex={1} minWidth="250px">
+          <Typography
+            variant="subtitle2"
+            sx={{ color: "#1e293b", mb: 2, letterSpacing: 1 }}
+          >
+            OUTCOMES
+          </Typography>
+
+          {(selectedCourse.outcomes || []).map((item, index) => (
+            <Box key={index} display="flex" alignItems="center" mb={2}>
+              <Typography sx={{ color: "#1e293b", mr: 1 }}>
+                →
+              </Typography>
+              <Typography>{item}</Typography>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    </Box>
+  )}
+</Dialog>
     </Box>
   );
 };

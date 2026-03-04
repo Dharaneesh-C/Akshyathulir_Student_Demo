@@ -390,22 +390,7 @@ const Placements = () => {
         >
           Career Launchpad
         </Typography>
-        <Box sx={{ display: "flex", gap: 3 }}>
-          {["THIS WEEK", "THIS MONTH", "6 MONTHS"].map((tab) => (
-            <Typography
-              key={tab}
-              sx={{
-                fontSize: "0.8rem",
-                fontWeight: "bold",
-                color: EDU_COLORS.primary,
-                cursor: "pointer",
-                "&:hover": { opacity: 0.7 },
-              }}
-            >
-              {tab}
-            </Typography>
-          ))}
-        </Box>
+        
       </Box>
       {/* Placement Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
