@@ -42,7 +42,7 @@ const Certificates = () => {
   const [genOpen, setGenOpen] = React.useState(false);
   const [verifyId, setVerifyId] = React.useState("");
   const [verifiedCert, setVerifiedCert] = React.useState(null);
-
+  const adminEmail = localStorage.getItem("userEmail");
   const [formData, setFormData] = React.useState({
     studentName: "",
     course: "",
@@ -70,6 +70,7 @@ const Certificates = () => {
         completionDate: formData.expiryDate,
         issuedDate: formData.issueDate || "-",
         status: formData.status,
+        adminEmail: adminEmail,
 
         ...(formData.grade && { grade: formData.grade }),
         ...(formData.score && { score: Number(formData.score) }),
@@ -97,27 +98,28 @@ const Certificates = () => {
     }
   };
 
-  React.useEffect(() => {
-    fetchCertificates();
-  }, []);
-
-  const fetchCertificates = async () => {
+  const fetchCertificates = React.useCallback(async () => {
     try {
-      const res = await Api.get("/certificates/");
+      const res = await Api.get(`/certificates/${adminEmail}`);
 
       const formatted = res.data.map((c) => ({
         ...c,
-        id: c._id, // frontend-friendly id
+        id: c._id,
       }));
 
       setCertificates(formatted);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [adminEmail]);
+
+  React.useEffect(() => {
+    fetchCertificates();
+  }, [fetchCertificates]);
+
   const handleVerifyCertificate = async () => {
     try {
-      const res = await Api.get("/certificates/");
+      const res = await Api.get(`/certificates/${adminEmail}`);
 
       const found = res.data.find((c) => c._id === verifyId);
 
@@ -177,7 +179,7 @@ const Certificates = () => {
             }}
             onClick={() => setGenOpen(true)}
           >
-            Issuse Certificate
+            Issue Certificate
           </Button>
         </Stack>
       </Grid>

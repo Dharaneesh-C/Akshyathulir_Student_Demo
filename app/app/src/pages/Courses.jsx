@@ -31,6 +31,9 @@ const initialState = {
   startDate: "",
   trainer: "",
   description: "",
+  syllabus: "",
+  outcomes: "",
+  email: ""
 };
 
 const Courses = () => {
@@ -38,7 +41,7 @@ const Courses = () => {
   const [courses, setCourses] = useState([]);
   const [openAdd, setOpenAdd] = useState(false);
   const [newCourse, setNewCourse] = useState(initialState);
-
+  const email = localStorage.getItem("userEmail");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -50,13 +53,15 @@ const Courses = () => {
   }, []);
 
   const fetchCourses = async () => {
-    try {
-      const res = await Api.get("/courses/");
-      setCourses(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const email = localStorage.getItem("userEmail");
+
+  try {
+    const res = await Api.get(`/courses/${email}`);
+    setCourses(res.data);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   /* -------------------- ADD COURSE -------------------- */
 
@@ -95,6 +100,7 @@ const Courses = () => {
         outcomes: newCourse.outcomes
           ? newCourse.outcomes.split(",").map((o) => o.trim())
           : [],
+          email: email  
       };
 
       if (isEdit) {

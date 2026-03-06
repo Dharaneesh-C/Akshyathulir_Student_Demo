@@ -13,6 +13,7 @@ class Trainer(BaseModel):
     courses: int = 0
     status: str = "Active"
     rating: Optional[float] = 4.5
+    adminEmail: str
     
     
     
@@ -28,7 +29,7 @@ class Courses(BaseModel):
     syllabus: List[str] = []
     outcomes: List[str] = []
     enrolled: Optional[int] = 0
-    
+    email: str
 
     
 class Placement(BaseModel):
@@ -56,6 +57,7 @@ class Certificate(BaseModel):
     grade: Optional[str] = "-"
     score: Optional[int] = None
     status: str = "Pending"
+    adminEmail: str
 
 
 class BranchAddress(BaseModel):

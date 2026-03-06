@@ -9,10 +9,12 @@ def create_certificate(certificate: Certificate):
     result = certificates_collection.insert_one(certificate.model_dump())
     return {"message": "Certificate added successfully", "id": str(result.inserted_id)}
 
-@router.get("/")
-def get_certificates():
+@router.get("/{email}")
+def get_certificates(email: str):
     certificates = []
-    for cert in certificates_collection.find():
+
+    for cert in certificates_collection.find({"adminEmail": email}):
         cert["_id"] = str(cert["_id"])
         certificates.append(cert)
+
     return certificates

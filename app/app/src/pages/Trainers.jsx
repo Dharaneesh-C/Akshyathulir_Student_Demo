@@ -23,8 +23,8 @@ import StarIcon from "@mui/icons-material/Star";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
-import EmailIcon from "@mui/icons-material/Email";
-import PhoneIcon from "@mui/icons-material/Phone";
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
@@ -56,7 +56,9 @@ function Trainers() {
   /* ================= FETCH TRAINERS ================= */
   const fetchTrainers = async () => {
     try {
-      const res = await Api.get("/trainers/");
+       const email = localStorage.getItem("userEmail");
+
+const res = await Api.get(`/trainers/${email}`);
 
       const formatted = res.data.map((t) => ({
         ...t,
@@ -77,12 +79,13 @@ function Trainers() {
     fetchTrainers();
   }, []);
 
+
   /* ================= DELETE TRAINER ================= */
   const handleDeleteTrainer = async (id) => {
     if (!window.confirm("Delete this trainer?")) return;
 
     try {
-      await Api.delete(`/trainers/${id}/`);
+      await Api.delete(`/trainers/${id}`);
       setTrainerList((prev) => prev.filter((t) => t._id !== id));
     } catch (err) {
       console.error(err);
@@ -101,6 +104,7 @@ function Trainers() {
     trainer.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
   const handleAddTrainer = async () => {
+
     if (!validateForm()) return;
 
     try {
@@ -115,12 +119,13 @@ function Trainers() {
         email: formData.email,
         phone: formData.phone,
         qualification: formData.qualification,
+        adminEmail: localStorage.getItem("userEmail"),
       };
 
       if (isEdit) {
-        await Api.put(`/trainers/${editId}/`, payload);
+        await Api.put(`/trainers/${editId}`, payload);
       } else {
-        await Api.post("/trainers/", payload);
+        await Api.post("/trainers", payload);
       }
 
       await fetchTrainers();
@@ -130,6 +135,7 @@ function Trainers() {
       setErrors({});
       setIsEdit(false);
       setEditId(null);
+
     } catch (err) {
       console.log(err);
       alert("Something went wrong");
@@ -187,9 +193,11 @@ function Trainers() {
     } else if (!/^[0-9]+$/.test(formData.trained)) {
       newErrors.trained = "Trained must contain only numbers";
     }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
 
   return (
     <Box sx={{ p: 4, backgroundColor: "#eef8ee", minHeight: "100vh" }}>
@@ -556,6 +564,7 @@ function Trainers() {
                   Experience
                 </Typography>
                 <TextField
+
                   select
                   fullWidth
                   size="small"
@@ -564,6 +573,7 @@ function Trainers() {
                   onChange={handleChange}
                   error={!!errors.exp}
                   helperText={errors.exp}
+
                   SelectProps={{
                     displayEmpty: true,
                     renderValue: (selected) => {
@@ -587,9 +597,9 @@ function Trainers() {
               </Grid>
 
               <Grid
-                size={6}
+               size={6}
                 sx={{
-                  "& .MuiInputBase-root": { width: 266 },
+                  "& .MuiInputBase-root": { width: 266},
                 }}
               >
                 <Typography fontSize={14} fontWeight={500} mb={0.5}>
@@ -658,6 +668,7 @@ function Trainers() {
       >
         {selectedTrainer && (
           <Box>
+
             {/* Close Button */}
             <Box sx={{ display: "flex", justifyContent: "flex-end", p: 1 }}>
               <IconButton onClick={() => setViewOpen(false)}>
@@ -704,13 +715,19 @@ function Trainers() {
                   <Typography fontWeight={600}>
                     {selectedTrainer.rating ?? 4.8}
                   </Typography>
-                  <Typography color="text.secondary">(142 reviews)</Typography>
+                  <Typography color="text.secondary">
+                    (142 reviews)
+                  </Typography>
                   {/* Status */}
                   <Chip label={selectedTrainer.status} color="success" />
                 </Box>
 
                 {/* Centered Info Columns */}
-                <Grid container spacing={3} sx={{ mt: 3, textAlign: "center" }}>
+                <Grid
+                  container
+                  spacing={3}
+                  sx={{ mt: 3, textAlign: "center" }}
+                >
                   <Grid item xs={6} md={3}>
                     <Typography color="text.secondary" fontSize={14}>
                       Experience
@@ -760,6 +777,7 @@ function Trainers() {
                 justifyContent: "center",
                 gap: 4,
                 flexWrap: "wrap",
+
               }}
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -773,10 +791,11 @@ function Trainers() {
               </Box>
 
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <LocationOnOutlinedIcon fontSize="small" />
+                 <LocationOnOutlinedIcon fontSize="small" />
                 <Typography>{selectedTrainer.location}</Typography>
               </Box>
             </Box>
+
           </Box>
         )}
       </Dialog>

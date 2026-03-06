@@ -10,12 +10,14 @@ def create_course(course: Courses):
     result = courses_collection.insert_one(course.model_dump())
     return {"message": "Course added successfully", "id": str(result.inserted_id)}
 
-@router.get("/")
-def get_courses():
+@router.get("/{email}")
+def get_courses(email: str):
     courses = []
-    for course in courses_collection.find():
+
+    for course in courses_collection.find({"email": email}):
         course["_id"] = str(course["_id"])
         courses.append(course)
+
     return courses
 
 @router.put("/{course_id}")

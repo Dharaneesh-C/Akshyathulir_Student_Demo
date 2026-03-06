@@ -18,6 +18,16 @@ def get_trainers():
         trainers.append(trainer)
     return trainers
 
+@router.get("/{email}")
+def get_trainers_by_email(email: str):
+    trainers = []
+
+    for trainer in Trainer_collection.find({"adminEmail": email}):
+        trainer["_id"] = str(trainer["_id"])
+        trainers.append(trainer)
+
+    return trainers
+
 @router.put("/{trainer_id}")
 def update_trainer(trainer_id: str, trainer: Trainer):
     result = Trainer_collection.update_one(
