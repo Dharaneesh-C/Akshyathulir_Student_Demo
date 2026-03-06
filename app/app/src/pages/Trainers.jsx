@@ -12,6 +12,7 @@ import {
   Button,
   Dialog,
   MenuItem,
+  Stack,
 } from "@mui/material";
 import Api from "./api";
 // Icons
@@ -28,6 +29,8 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
+import Slide from "@mui/material/Slide";
+import Close from "@mui/icons-material/Close";
 
 /* -------------------- INITIAL TRAINER STATE -------------------- */
 const initialTrainerState = {
@@ -52,6 +55,7 @@ function Trainers() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [isEdit, setIsEdit] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [showAd, setShowAd] = React.useState(false);
 
   /* ================= FETCH TRAINERS ================= */
   const fetchTrainers = async () => {
@@ -197,7 +201,17 @@ const res = await Api.get(`/trainers/${email}`);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+React.useEffect(() => {
+  const interval = setInterval(() => {
+    setShowAd(true);
 
+    setTimeout(() => {
+      setShowAd(false);
+    }, 4000);
+  }, 10000);
+
+  return () => clearInterval(interval);
+}, []);
 
   return (
     <Box sx={{ p: 4, backgroundColor: "#eef8ee", minHeight: "100vh" }}>
@@ -799,6 +813,52 @@ const res = await Api.get(`/trainers/${email}`);
           </Box>
         )}
       </Dialog>
+      <Slide direction="left" in={showAd} mountOnEnter unmountOnExit>
+  <Card
+    sx={{
+      position: "fixed",
+      bottom: 20,
+      right: 20,
+      width: 260,
+      zIndex: 999,
+      borderRadius: 3,
+      boxShadow: "0px 8px 25px rgba(0,0,0,0.25)",
+    }}
+  >
+    <CardContent sx={{ position: "relative" }}>
+      
+      <IconButton
+        size="small"
+        sx={{ position: "absolute", top: 5, right: 5 }}
+        onClick={() => setShowAd(false)}
+      >
+        <Close fontSize="small" />
+      </IconButton>
+
+      <Stack spacing={1}>
+        <Typography fontWeight="bold">
+          🎓 Upgrade Your Skills
+        </Typography>
+
+        <Typography variant="body2" color="text.secondary">
+          Learn Full Stack Development and earn industry certificates.
+        </Typography>
+
+        <Button
+          size="small"
+          variant="contained"
+          sx={{
+            backgroundColor: "#1f4d3a",
+            "&:hover": { backgroundColor: "#1f4d3a" },
+          }}
+        >
+          Explore Courses
+        </Button>
+      </Stack>
+
+    </CardContent>
+  </Card>
+</Slide>
     </Box>
   );
 }

@@ -31,6 +31,9 @@ import EmojiEvents from "@mui/icons-material/EmojiEvents";
 import CheckCircle from "@mui/icons-material/CheckCircle";
 import Schedule from "@mui/icons-material/Schedule";
 import Close from "@mui/icons-material/Close";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import Slide from "@mui/material/Slide";
 
 /* -------------------- DATA -------------------- */
 
@@ -43,6 +46,10 @@ const Certificates = () => {
   const [verifyId, setVerifyId] = React.useState("");
   const [verifiedCert, setVerifiedCert] = React.useState(null);
   const adminEmail = localStorage.getItem("userEmail");
+  const [selectedCertificate, setSelectedCertificate] = React.useState(null);
+  const previewRef = React.useRef(null);
+  const certificateRef = React.useRef(null);
+  const [showAd, setShowAd] = React.useState(false);
   const [formData, setFormData] = React.useState({
     studentName: "",
     course: "",
@@ -141,7 +148,35 @@ const Certificates = () => {
       console.log("Verified Certificate:", verifiedCert);
     }
   }, [verifiedCert]);
+  const handleDownloadPDF = async () => {
+    const element = certificateRef.current;
 
+    if (!element) return;
+
+    const canvas = await html2canvas(element);
+
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("landscape", "mm", "a4");
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+    pdf.save(`${selectedCertificate?.studentName || "certificate"}.pdf`);
+  };
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setShowAd(true);
+
+      setTimeout(() => {
+        setShowAd(false);
+      }, 4000); // ad visible for 4 seconds
+    }, 10000); // show every 10 seconds
+
+    return () => clearInterval(interval);
+  }, []);
   return (
     <Box p={4}>
       {/* Header */}
@@ -273,7 +308,7 @@ const Certificates = () => {
         </Grid>
       </Grid>
       {/*Certificate Pre View*/}
-      <Card sx={{ mb: 4 }}>
+      <Card ref={previewRef} sx={{ mb: 4 }}>
         <CardHeader
           title={
             <Typography variant="h6" fontWeight="bold">
@@ -284,6 +319,7 @@ const Certificates = () => {
 
         <CardContent>
           <Box
+            ref={certificateRef}
             sx={{
               border: "2px dashed",
               borderColor: "divider",
@@ -308,7 +344,7 @@ const Certificates = () => {
               </Typography>
 
               <Typography variant="h5" fontWeight="bold" color="primary" mb={2}>
-                [Student Name]
+                {selectedCertificate?.studentName || "[Student Name]"}
               </Typography>
 
               <Typography color="text.secondary" mb={2}>
@@ -316,7 +352,7 @@ const Certificates = () => {
               </Typography>
 
               <Typography variant="h6" fontWeight="medium" mb={4}>
-                [Course Name]
+                {selectedCertificate?.course || "[Course Name]"}
               </Typography>
 
               {/* Footer */}
@@ -324,13 +360,15 @@ const Certificates = () => {
                 <Grid item>
                   <Typography fontWeight="bold">Date</Typography>
                   <Typography color="text.secondary">
-                    [Completion Date]
+                    {selectedCertificate?.completionDate || "[Completion Date]"}
                   </Typography>
                 </Grid>
 
                 <Grid item>
                   <Typography fontWeight="bold">Certificate ID</Typography>
-                  <Typography color="text.secondary">[CERT-XXXXX]</Typography>
+                  <Typography color="text.secondary">
+                    {selectedCertificate?.id || "[CERT-XXXXX]"}
+                  </Typography>
                 </Grid>
               </Grid>
             </Box>
@@ -396,12 +434,26 @@ const Certificates = () => {
                   </TableCell>
 
                   <TableCell align="right">
-                    <IconButton>
+                    <IconButton
+                      onClick={() => {
+                        setSelectedCertificate(c);
+
+                        setTimeout(() => {
+                          previewRef.current?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start",
+                          });
+                        }, 100);
+                      }}
+                    >
                       <Visibility />
                     </IconButton>
                     {c.status === "Issued" && (
                       <>
-                        <IconButton>
+                        <IconButton
+                          onClick={handleDownloadPDF}
+                          disabled={!selectedCertificate}
+                        >
                           <Download />
                         </IconButton>
                         <IconButton>
@@ -600,6 +652,48 @@ const Certificates = () => {
           </Stack>
         </Box>
       </Dialog>
+      {showAd && (
+        <Card
+          sx={{
+            position: "fixed",
+            bottom: 20,
+            right: 20,
+            width: 260,
+            zIndex: 999,
+            borderRadius: 3,
+            boxShadow: "0px 8px 25px rgba(0,0,0,0.2)",
+            animation: "fadeIn 0.5s ease",
+          }}
+        >
+          <CardContent>
+            <Stack spacing={1}>
+              <Typography fontWeight="bold">🎓 Upgrade Your Skills</Typography>
+
+              <Typography variant="body2" color="text.secondary">
+                Learn Full Stack Development and earn industry certificates.
+              </Typography>
+
+              <Button
+                size="small"
+                variant="contained"
+                sx={{
+                  backgroundColor: "#1f4d3a",
+                  "&:hover": { backgroundColor: "#1f4d3a" },
+                }}
+              >
+                Explore Courses
+              </Button>
+            </Stack>
+            <IconButton
+              size="small"
+              sx={{ position: "absolute", top: 5, right: 5 }}
+              onClick={() => setShowAd(false)}
+            >
+              <Close fontSize="small" />
+            </IconButton>
+          </CardContent>
+        </Card>
+      )}
     </Box>
   );
 };
