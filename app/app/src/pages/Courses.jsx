@@ -20,6 +20,7 @@ import Search from "@mui/icons-material/Search";
 import Visibility from "@mui/icons-material/Visibility";
 import Edit from "@mui/icons-material/Edit";
 import Delete from "@mui/icons-material/Delete";
+import Ads from "./ads";
 
 /* -------------------- INITIAL STATE -------------------- */
 const initialState = {
@@ -33,7 +34,7 @@ const initialState = {
   description: "",
   syllabus: "",
   outcomes: "",
-  email: ""
+  email: "",
 };
 
 const Courses = () => {
@@ -53,15 +54,15 @@ const Courses = () => {
   }, []);
 
   const fetchCourses = async () => {
-  const email = localStorage.getItem("userEmail");
+    const email = localStorage.getItem("userEmail");
 
-  try {
-    const res = await Api.get(`/courses/${email}`);
-    setCourses(res.data);
-  } catch (err) {
-    console.error(err);
-  }
-};
+    try {
+      const res = await Api.get(`/courses/${email}`);
+      setCourses(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   /* -------------------- ADD COURSE -------------------- */
 
@@ -100,7 +101,7 @@ const Courses = () => {
         outcomes: newCourse.outcomes
           ? newCourse.outcomes.split(",").map((o) => o.trim())
           : [],
-          email: email  
+        email: email,
       };
 
       if (isEdit) {
@@ -387,16 +388,16 @@ const Courses = () => {
                   setNewCourse({ ...newCourse, category: e.target.value })
                 }
                 SelectProps={{
-                    displayEmpty: true,
-                    renderValue: (selected) => {
-                      if (selected === "") {
-                        return (
-                          <span style={{ color: "#aaa" }}>Select Category</span>
-                        );
-                      }
-                      return selected;
-                    },
-                  }}
+                  displayEmpty: true,
+                  renderValue: (selected) => {
+                    if (selected === "") {
+                      return (
+                        <span style={{ color: "#aaa" }}>Select Category</span>
+                      );
+                    }
+                    return selected;
+                  },
+                }}
               >
                 <MenuItem value="IT & Software">IT & Software</MenuItem>
                 <MenuItem value="Business">Business</MenuItem>
@@ -423,16 +424,16 @@ const Courses = () => {
                   setNewCourse({ ...newCourse, duration: e.target.value })
                 }
                 SelectProps={{
-                    displayEmpty: true,
-                    renderValue: (selected) => {
-                      if (selected === "") {
-                        return (
-                          <span style={{ color: "#aaa" }}>Select Duration</span>
-                        );
-                      }
-                      return selected;
-                    },
-                  }}
+                  displayEmpty: true,
+                  renderValue: (selected) => {
+                    if (selected === "") {
+                      return (
+                        <span style={{ color: "#aaa" }}>Select Duration</span>
+                      );
+                    }
+                    return selected;
+                  },
+                }}
               >
                 <MenuItem value="1 month">1 Month</MenuItem>
                 <MenuItem value="2 month">2 Months</MenuItem>
@@ -495,16 +496,16 @@ const Courses = () => {
                   setNewCourse({ ...newCourse, status: e.target.value })
                 }
                 SelectProps={{
-                    displayEmpty: true,
-                    renderValue: (selected) => {
-                      if (selected === "") {
-                        return (
-                          <span style={{ color: "#aaa" }}>Select Status</span>
-                        );
-                      }
-                      return selected;
-                    },
-                  }}
+                  displayEmpty: true,
+                  renderValue: (selected) => {
+                    if (selected === "") {
+                      return (
+                        <span style={{ color: "#aaa" }}>Select Status</span>
+                      );
+                    }
+                    return selected;
+                  },
+                }}
               >
                 <MenuItem value="Active">Active</MenuItem>
                 <MenuItem value="Draft">Draft</MenuItem>
@@ -583,94 +584,98 @@ const Courses = () => {
         </Box>
       </Dialog>
 
-    {/* VIEW DETAILS */}
-<Dialog
-  open={detailsOpen}
-  onClose={() => setDetailsOpen(false)}
-  fullWidth
-  maxWidth="md"
-  PaperProps={{
-    sx: {
-      backgroundColor: "#fff",
-      color: "#000",
-      borderRadius: "16px",
-      padding: 2,
-    },
-  }}
->
-  {selectedCourse && (
-    <Box p={3}>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{ color: "#1e293b", letterSpacing: 1 }}
-          >
-            DATA • IT & SOFTWARE
-          </Typography>
+      {/* VIEW DETAILS */}
+      <Dialog
+        open={detailsOpen}
+        onClose={() => setDetailsOpen(false)}
+        fullWidth
+        maxWidth="md"
+        PaperProps={{
+          sx: {
+            backgroundColor: "#fff",
+            color: "#000",
+            borderRadius: "16px",
+            padding: 2,
+          },
+        }}
+      >
+        {selectedCourse && (
+          <Box p={3}>
+            {/* Header */}
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Box>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "#1e293b", letterSpacing: 1 }}
+                >
+                  DATA • IT & SOFTWARE
+                </Typography>
 
-          <Typography variant="h4" fontWeight="bold" mt={1}>
-            {selectedCourse.name}
-          </Typography>
+                <Typography variant="h4" fontWeight="bold" mt={1}>
+                  {selectedCourse.name}
+                </Typography>
 
-          <Typography variant="body2" color="gray" mt={1}>
-            Master data analysis, visualization, and machine learning techniques.
-          </Typography>
-        </Box>
-      </Box>
-
-      <Divider sx={{ my: 3, backgroundColor: "#1e293b" }} />
-
-      {/* Content Section */}
-      <Box display="flex" gap={6} flexWrap="wrap">
-        {/* SYLLABUS */}
-        <Box flex={1} minWidth="250px">
-          <Typography
-            variant="subtitle2"
-            sx={{ color: "#1e293b", mb: 2, letterSpacing: 1 }}
-          >
-            SYLLABUS
-          </Typography>
-
-          {(selectedCourse.syllabus || []).map((item, index) => (
-            <Box key={index} display="flex" alignItems="center" mb={2}>
-              <Typography
-                sx={{
-                  color: "#1e293b",
-                  fontWeight: "bold",
-                  width: 30,
-                }}
-              >
-                {String(index + 1).padStart(2, "0")}
-              </Typography>
-              <Typography>{item}</Typography>
+                <Typography variant="body2" color="gray" mt={1}>
+                  Master data analysis, visualization, and machine learning
+                  techniques.
+                </Typography>
+              </Box>
             </Box>
-          ))}
-        </Box>
 
-        {/* OUTCOMES */}
-        <Box flex={1} minWidth="250px">
-          <Typography
-            variant="subtitle2"
-            sx={{ color: "#1e293b", mb: 2, letterSpacing: 1 }}
-          >
-            OUTCOMES
-          </Typography>
+            <Divider sx={{ my: 3, backgroundColor: "#1e293b" }} />
 
-          {(selectedCourse.outcomes || []).map((item, index) => (
-            <Box key={index} display="flex" alignItems="center" mb={2}>
-              <Typography sx={{ color: "#1e293b", mr: 1 }}>
-                →
-              </Typography>
-              <Typography>{item}</Typography>
+            {/* Content Section */}
+            <Box display="flex" gap={6} flexWrap="wrap">
+              {/* SYLLABUS */}
+              <Box flex={1} minWidth="250px">
+                <Typography
+                  variant="subtitle2"
+                  sx={{ color: "#1e293b", mb: 2, letterSpacing: 1 }}
+                >
+                  SYLLABUS
+                </Typography>
+
+                {(selectedCourse.syllabus || []).map((item, index) => (
+                  <Box key={index} display="flex" alignItems="center" mb={2}>
+                    <Typography
+                      sx={{
+                        color: "#1e293b",
+                        fontWeight: "bold",
+                        width: 30,
+                      }}
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </Typography>
+                    <Typography>{item}</Typography>
+                  </Box>
+                ))}
+              </Box>
+
+              {/* OUTCOMES */}
+              <Box flex={1} minWidth="250px">
+                <Typography
+                  variant="subtitle2"
+                  sx={{ color: "#1e293b", mb: 2, letterSpacing: 1 }}
+                >
+                  OUTCOMES
+                </Typography>
+
+                {(selectedCourse.outcomes || []).map((item, index) => (
+                  <Box key={index} display="flex" alignItems="center" mb={2}>
+                    <Typography sx={{ color: "#1e293b", mr: 1 }}>→</Typography>
+                    <Typography>{item}</Typography>
+                  </Box>
+                ))}
+              </Box>
             </Box>
-          ))}
-        </Box>
-      </Box>
-    </Box>
-  )}
-</Dialog>
+          </Box>
+        )}
+      </Dialog>
+      <Ads page="courses" />
     </Box>
   );
 };

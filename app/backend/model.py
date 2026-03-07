@@ -141,3 +141,13 @@ class StartupApplication(BaseModel):
     trainingOffered: Optional[str] = ""
     trainingType: List[str] = []
     fypOffered: Optional[str] = ""
+class Ads(BaseModel):
+    title: str
+    description: str
+    image: str
+    button: Optional[str] = "Learn More"
+    link: Optional[str] = ""
+    page: str
+    adminEmail: str
+
+    

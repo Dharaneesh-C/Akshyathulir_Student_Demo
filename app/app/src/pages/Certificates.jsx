@@ -33,7 +33,8 @@ import Schedule from "@mui/icons-material/Schedule";
 import Close from "@mui/icons-material/Close";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import Slide from "@mui/material/Slide";
+import Ads from "./ads"
+
 
 /* -------------------- DATA -------------------- */
 
@@ -49,7 +50,7 @@ const Certificates = () => {
   const [selectedCertificate, setSelectedCertificate] = React.useState(null);
   const previewRef = React.useRef(null);
   const certificateRef = React.useRef(null);
-  const [showAd, setShowAd] = React.useState(false);
+
   const [formData, setFormData] = React.useState({
     studentName: "",
     course: "",
@@ -166,17 +167,6 @@ const Certificates = () => {
 
     pdf.save(`${selectedCertificate?.studentName || "certificate"}.pdf`);
   };
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setShowAd(true);
-
-      setTimeout(() => {
-        setShowAd(false);
-      }, 4000); // ad visible for 4 seconds
-    }, 10000); // show every 10 seconds
-
-    return () => clearInterval(interval);
-  }, []);
   return (
     <Box p={4}>
       {/* Header */}
@@ -652,48 +642,7 @@ const Certificates = () => {
           </Stack>
         </Box>
       </Dialog>
-      {showAd && (
-        <Card
-          sx={{
-            position: "fixed",
-            bottom: 20,
-            right: 20,
-            width: 260,
-            zIndex: 999,
-            borderRadius: 3,
-            boxShadow: "0px 8px 25px rgba(0,0,0,0.2)",
-            animation: "fadeIn 0.5s ease",
-          }}
-        >
-          <CardContent>
-            <Stack spacing={1}>
-              <Typography fontWeight="bold">🎓 Upgrade Your Skills</Typography>
-
-              <Typography variant="body2" color="text.secondary">
-                Learn Full Stack Development and earn industry certificates.
-              </Typography>
-
-              <Button
-                size="small"
-                variant="contained"
-                sx={{
-                  backgroundColor: "#1f4d3a",
-                  "&:hover": { backgroundColor: "#1f4d3a" },
-                }}
-              >
-                Explore Courses
-              </Button>
-            </Stack>
-            <IconButton
-              size="small"
-              sx={{ position: "absolute", top: 5, right: 5 }}
-              onClick={() => setShowAd(false)}
-            >
-              <Close fontSize="small" />
-            </IconButton>
-          </CardContent>
-        </Card>
-      )}
+     <Ads page="certificates" />
     </Box>
   );
 };

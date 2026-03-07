@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from bson import ObjectId
 from model import Trainer
-from database import Trainer_collection
+from database import Trainer_collection, ads_collection
 
 router = APIRouter(prefix="/trainers", tags=["Trainers"])
 
@@ -50,3 +50,17 @@ def delete_trainer(trainer_id: str):
         raise HTTPException(status_code=404, detail="Trainer not found")
 
     return {"message": "Trainer deleted successfully"}
+@router.get("/ads/{email}/{page}")
+async def get_ads(email: str, page: str):
+
+    ads = list(
+        ads_collection.find({
+            "adminEmail": email,
+            "page": page
+        })
+    )
+
+    for ad in ads:
+        ad["_id"] = str(ad["_id"])
+
+    return ads

@@ -1,5 +1,6 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
+
 import Sidebar from "./pages/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
@@ -12,12 +13,19 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Sidebar />}>
-          <Route index element={<Dashboard />} />
-          <Route path="courses" element={<Courses />} />
-          <Route path="placements" element={<Placements />} />
-          <Route path="trainers" element={<Trainers />} />
-          <Route path="certificates" element={<Certificates />} />
-          <Route path="allform" element={<Profile />} />
+
+        <Route index element={<Dashboard />} />
+
+        <Route path="courses" element={<Courses />} />
+
+        <Route path="placements" element={<Placements />} />
+
+        <Route path="trainers" element={<Trainers />} />
+
+        <Route path="certificates" element={<Certificates />} />
+
+        <Route path="allform" element={<Profile />} />
+
       </Route>
     </Routes>
   );

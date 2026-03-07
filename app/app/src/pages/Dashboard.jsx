@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import Ads from "./ads"
 
 import {
   LineChart,
@@ -475,6 +476,7 @@ export default function Dashboard() {
           </Card>
         </Grid>
       </Grid>
+      <Ads page="dashboard" />
     </Box>
   );
 }

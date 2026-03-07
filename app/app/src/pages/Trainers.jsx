@@ -12,7 +12,6 @@ import {
   Button,
   Dialog,
   MenuItem,
-  Stack,
 } from "@mui/material";
 import Api from "./api";
 // Icons
@@ -24,13 +23,12 @@ import StarIcon from "@mui/icons-material/Star";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
-import EmailIcon from '@mui/icons-material/Email';
-import PhoneIcon from '@mui/icons-material/Phone';
+import EmailIcon from "@mui/icons-material/Email";
+import PhoneIcon from "@mui/icons-material/Phone";
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
-import Slide from "@mui/material/Slide";
-import Close from "@mui/icons-material/Close";
+import Ads from "./ads";
 
 /* -------------------- INITIAL TRAINER STATE -------------------- */
 const initialTrainerState = {
@@ -55,14 +53,13 @@ function Trainers() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [isEdit, setIsEdit] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [showAd, setShowAd] = React.useState(false);
 
   /* ================= FETCH TRAINERS ================= */
   const fetchTrainers = async () => {
     try {
-       const email = localStorage.getItem("userEmail");
+      const email = localStorage.getItem("userEmail");
 
-const res = await Api.get(`/trainers/${email}`);
+      const res = await Api.get(`/trainers/${email}`);
 
       const formatted = res.data.map((t) => ({
         ...t,
@@ -82,7 +79,6 @@ const res = await Api.get(`/trainers/${email}`);
   useEffect(() => {
     fetchTrainers();
   }, []);
-
 
   /* ================= DELETE TRAINER ================= */
   const handleDeleteTrainer = async (id) => {
@@ -108,7 +104,6 @@ const res = await Api.get(`/trainers/${email}`);
     trainer.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
   const handleAddTrainer = async () => {
-
     if (!validateForm()) return;
 
     try {
@@ -139,7 +134,6 @@ const res = await Api.get(`/trainers/${email}`);
       setErrors({});
       setIsEdit(false);
       setEditId(null);
-
     } catch (err) {
       console.log(err);
       alert("Something went wrong");
@@ -201,17 +195,6 @@ const res = await Api.get(`/trainers/${email}`);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-React.useEffect(() => {
-  const interval = setInterval(() => {
-    setShowAd(true);
-
-    setTimeout(() => {
-      setShowAd(false);
-    }, 4000);
-  }, 10000);
-
-  return () => clearInterval(interval);
-}, []);
 
   return (
     <Box sx={{ p: 4, backgroundColor: "#eef8ee", minHeight: "100vh" }}>
@@ -578,7 +561,6 @@ React.useEffect(() => {
                   Experience
                 </Typography>
                 <TextField
-
                   select
                   fullWidth
                   size="small"
@@ -587,7 +569,6 @@ React.useEffect(() => {
                   onChange={handleChange}
                   error={!!errors.exp}
                   helperText={errors.exp}
-
                   SelectProps={{
                     displayEmpty: true,
                     renderValue: (selected) => {
@@ -611,9 +592,9 @@ React.useEffect(() => {
               </Grid>
 
               <Grid
-               size={6}
+                size={6}
                 sx={{
-                  "& .MuiInputBase-root": { width: 266},
+                  "& .MuiInputBase-root": { width: 266 },
                 }}
               >
                 <Typography fontSize={14} fontWeight={500} mb={0.5}>
@@ -682,7 +663,6 @@ React.useEffect(() => {
       >
         {selectedTrainer && (
           <Box>
-
             {/* Close Button */}
             <Box sx={{ display: "flex", justifyContent: "flex-end", p: 1 }}>
               <IconButton onClick={() => setViewOpen(false)}>
@@ -729,19 +709,13 @@ React.useEffect(() => {
                   <Typography fontWeight={600}>
                     {selectedTrainer.rating ?? 4.8}
                   </Typography>
-                  <Typography color="text.secondary">
-                    (142 reviews)
-                  </Typography>
+                  <Typography color="text.secondary">(142 reviews)</Typography>
                   {/* Status */}
                   <Chip label={selectedTrainer.status} color="success" />
                 </Box>
 
                 {/* Centered Info Columns */}
-                <Grid
-                  container
-                  spacing={3}
-                  sx={{ mt: 3, textAlign: "center" }}
-                >
+                <Grid container spacing={3} sx={{ mt: 3, textAlign: "center" }}>
                   <Grid item xs={6} md={3}>
                     <Typography color="text.secondary" fontSize={14}>
                       Experience
@@ -791,7 +765,6 @@ React.useEffect(() => {
                 justifyContent: "center",
                 gap: 4,
                 flexWrap: "wrap",
-
               }}
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -805,60 +778,14 @@ React.useEffect(() => {
               </Box>
 
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                 <LocationOnOutlinedIcon fontSize="small" />
+                <LocationOnOutlinedIcon fontSize="small" />
                 <Typography>{selectedTrainer.location}</Typography>
               </Box>
             </Box>
-
           </Box>
         )}
       </Dialog>
-      <Slide direction="left" in={showAd} mountOnEnter unmountOnExit>
-  <Card
-    sx={{
-      position: "fixed",
-      bottom: 20,
-      right: 20,
-      width: 260,
-      zIndex: 999,
-      borderRadius: 3,
-      boxShadow: "0px 8px 25px rgba(0,0,0,0.25)",
-    }}
-  >
-    <CardContent sx={{ position: "relative" }}>
-      
-      <IconButton
-        size="small"
-        sx={{ position: "absolute", top: 5, right: 5 }}
-        onClick={() => setShowAd(false)}
-      >
-        <Close fontSize="small" />
-      </IconButton>
-
-      <Stack spacing={1}>
-        <Typography fontWeight="bold">
-          🎓 Upgrade Your Skills
-        </Typography>
-
-        <Typography variant="body2" color="text.secondary">
-          Learn Full Stack Development and earn industry certificates.
-        </Typography>
-
-        <Button
-          size="small"
-          variant="contained"
-          sx={{
-            backgroundColor: "#1f4d3a",
-            "&:hover": { backgroundColor: "#1f4d3a" },
-          }}
-        >
-          Explore Courses
-        </Button>
-      </Stack>
-
-    </CardContent>
-  </Card>
-</Slide>
+      <Ads page="trainers" />
     </Box>
   );
 }

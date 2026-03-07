@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from model import Certificate
-from database import certificates_collection
+from database import certificates_collection, ads_collection
 
 router = APIRouter(prefix="/certificates", tags=["Certificates"])
 
@@ -18,3 +18,17 @@ def get_certificates(email: str):
         certificates.append(cert)
 
     return certificates
+@router.get("/ads/{email}/{page}")
+async def get_ads(email: str, page: str):
+
+    ads = list(
+        ads_collection.find({
+            "adminEmail": email,
+            "page": page
+        })
+    )
+
+    for ad in ads:
+        ad["_id"] = str(ad["_id"])
+
+    return ads

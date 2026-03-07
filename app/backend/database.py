@@ -11,5 +11,6 @@ Trainer_collection = db["trainer"]
 placement_collection = db["placement"]
 courses_collection = db["courses"]
 dashboard_collection = db["dashboard_data"]
-
+ads_collection = db["ads"]
+ads_controller_collection = db["ads_controller"]
 

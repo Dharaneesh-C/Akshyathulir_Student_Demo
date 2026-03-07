@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from bson import ObjectId
 from model import Courses
-from database import courses_collection
+from database import courses_collection, ads_collection
 
 router = APIRouter(prefix="/courses", tags=["Courses"])
 
@@ -42,3 +42,17 @@ def delete_course(course_id: str):
         raise HTTPException(status_code=404, detail="Course not found")
 
     return {"message": "Course deleted successfully"}
+@router.get("/ads/{email}/{page}")
+async def get_ads(email: str, page: str):
+
+    ads = list(
+        ads_collection.find({
+            "adminEmail": email,
+            "page": page
+        })
+    )
+
+    for ad in ads:
+        ad["_id"] = str(ad["_id"])
+
+    return ads

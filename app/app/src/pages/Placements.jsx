@@ -25,7 +25,7 @@ import BusinessIcon from "@mui/icons-material/Business";
 import PeopleIcon from "@mui/icons-material/People";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 // InfoOutlinedIcon was removed because it's not used in this file
-
+import Ads from "./ads";
 import Api from "./api";
 const EDU_COLORS = {
   primary: "#1a3e36",
@@ -390,7 +390,6 @@ const Placements = () => {
         >
           Career Launchpad
         </Typography>
-        
       </Box>
       {/* Placement Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -863,6 +862,7 @@ const Placements = () => {
           </Grid>
         </CardContent>
       </Card>
+      <Ads page="placements" />
     </Box>
   );
 };

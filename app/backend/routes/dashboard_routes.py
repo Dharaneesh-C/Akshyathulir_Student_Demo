@@ -7,7 +7,7 @@ from controllers.dashboard_controller import (
     get_PerformanceSummary_controller,
     get_StageDistribution_controller
 )
-
+from database import ads_collection
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
@@ -58,3 +58,18 @@ def get_PerformanceSummary(email: str):
 @router.get("/StageDistribution/{email}")
 def get_StageDistribution(email: str):
     return get_StageDistribution_controller(email)
+
+@router.get("/ads/{email}/{page}")
+async def get_ads(email: str, page: str):
+
+    ads = list(
+        ads_collection.find({
+            "adminEmail": email,
+            "page": page
+        })
+    )
+
+    for ad in ads:
+        ad["_id"] = str(ad["_id"])
+
+    return ads

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from model import Placement
-from database import placement_collection
+from database import placement_collection, ads_collection
 
 router = APIRouter(prefix="/placements", tags=["Placements"])
 
@@ -16,3 +16,17 @@ def get_placements():
         placement["_id"] = str(placement["_id"])
         placements.append(placement)
     return placements
+@router.get("/ads/{email}/{page}")
+async def get_ads(email: str, page: str):
+
+    ads = list(
+        ads_collection.find({
+            "adminEmail": email,
+            "page": page
+        })
+    )
+
+    for ad in ads:
+        ad["_id"] = str(ad["_id"])
+
+    return ads
