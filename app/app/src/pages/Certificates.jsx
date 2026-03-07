@@ -46,11 +46,19 @@ const Certificates = () => {
   const [genOpen, setGenOpen] = React.useState(false);
   const [verifyId, setVerifyId] = React.useState("");
   const [verifiedCert, setVerifiedCert] = React.useState(null);
-  const adminEmail = localStorage.getItem("userEmail");
+  const [loading, setLoading] = React.useState({ issue: false, verify: false });
+  const adminEmail = localStorage.getItem("userEmail") || "";
+  if (!adminEmail) {
+    console.warn("Admin email not set in localStorage");
+  }
   const [selectedCertificate, setSelectedCertificate] = React.useState(null);
   const previewRef = React.useRef(null);
   const certificateRef = React.useRef(null);
-
+  const [stats, setStats] = React.useState({
+    totalIssued: 0,
+    verifiedThisMonth: 0,
+    pending: 0,
+  });
   const [formData, setFormData] = React.useState({
     studentName: "",
     course: "",
@@ -66,11 +74,35 @@ const Certificates = () => {
     return (
       c.studentName?.toLowerCase().includes(query) ||
       c.course?.toLowerCase().includes(query) ||
-      c._id?.toLowerCase().includes(query)
+      c.id?.toLowerCase().includes(query)
     );
   });
+const fetchCertificates = React.useCallback(async () => {
+  if (!adminEmail) return;
+  try {
+    const res = await Api.get(`/certificates/${adminEmail}`);
 
+    const formatted = res.data.map((c) => ({
+      ...c,
+      id: c._id,
+    }));
+
+    setCertificates(formatted);
+  } catch (err) {
+    console.error(err);
+  }
+}, [adminEmail]);
   const handleIssueCertificate = async () => {
+    if (
+      !formData.studentName.trim() ||
+      !formData.course.trim() ||
+      !formData.expiryDate
+    ) {
+      alert("❌ Please complete all required fields (student name, course, expiry date)");
+      return;
+    }
+
+    setLoading((l) => ({ ...l, issue: true }));
     try {
       const payload = {
         studentName: formData.studentName,
@@ -87,6 +119,7 @@ const Certificates = () => {
       await Api.post("/certificates/", payload);
 
       await fetchCertificates();
+      await fetchStats();
 
       setFormData({
         studentName: "",
@@ -103,33 +136,36 @@ const Certificates = () => {
     } catch (err) {
       console.error(err.response?.data || err);
       alert("❌ Error issuing certificate");
+    } finally {
+      setLoading((l) => ({ ...l, issue: false }));
     }
   };
 
-  const fetchCertificates = React.useCallback(async () => {
-    try {
-      const res = await Api.get(`/certificates/${adminEmail}`);
-
-      const formatted = res.data.map((c) => ({
-        ...c,
-        id: c._id,
-      }));
-
-      setCertificates(formatted);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [adminEmail]);
+  const fetchStats = React.useCallback(async () => {
+  if (!adminEmail) return;
+  try {
+    const res = await Api.get(`/certificates/stats/${adminEmail}`);
+    setStats(res.data);
+  } catch (err) {
+    console.error(err);
+  }
+}, [adminEmail]);
 
   React.useEffect(() => {
-    fetchCertificates();
-  }, [fetchCertificates]);
-
+  fetchCertificates();
+  fetchStats();
+}, [fetchCertificates, fetchStats]);
   const handleVerifyCertificate = async () => {
+    const id = verifyId.trim();
+    if (!id) {
+      alert("❌ Please enter a certificate ID to verify");
+      return;
+    }
+    setLoading((l) => ({ ...l, verify: true }));
     try {
       const res = await Api.get(`/certificates/${adminEmail}`);
 
-      const found = res.data.find((c) => c._id === verifyId);
+      const found = res.data.find((c) => c._id === id);
 
       if (!found) {
         alert("❌ Certificate not found");
@@ -142,6 +178,8 @@ const Certificates = () => {
     } catch (err) {
       console.error(err);
       alert("❌ Verification failed");
+    } finally {
+      setLoading((l) => ({ ...l, verify: false }));
     }
   };
   React.useEffect(() => {
@@ -231,7 +269,7 @@ const Certificates = () => {
               <Stack direction="row" justifyContent="space-between">
                 <Box>
                   <Typography color="text.secondary">Total Issued</Typography>
-                  <Typography variant="h5">2,150</Typography>
+                  <Typography variant="h5">{stats.totalIssued}</Typography>
                 </Box>
                 <EmojiEvents color="success" />
               </Stack>
@@ -261,7 +299,7 @@ const Certificates = () => {
                   <Typography color="text.secondary">
                     Verified This Month
                   </Typography>
-                  <Typography variant="h5">156</Typography>
+                  <Typography variant="h5">{stats.verifiedThisMonth}</Typography>
                 </Box>
                 <CheckCircle color="primary" />
               </Stack>
@@ -289,7 +327,7 @@ const Certificates = () => {
               <Stack direction="row" justifyContent="space-between">
                 <Box>
                   <Typography color="text.secondary">Pending Issue</Typography>
-                  <Typography variant="h5">24</Typography>
+                  <Typography variant="h5">{stats.pending}</Typography>
                 </Box>
                 <Schedule color="warning" />
               </Stack>
@@ -405,8 +443,8 @@ const Certificates = () => {
 
             <TableBody>
               {filteredCertificates.map((c) => (
-                <TableRow key={c._id} hover>
-                  <TableCell sx={{ fontFamily: "monospace" }}>{c.id}</TableCell>
+                <TableRow key={c.id || c._id} hover>
+                  <TableCell sx={{ fontFamily: "monospace" }}>{c.id || c._id}</TableCell>
                   <TableCell>{c.studentName}</TableCell>
                   <TableCell>{c.course}</TableCell>
                   <TableCell>{c.grade ?? "-"}</TableCell>
@@ -496,13 +534,14 @@ const Certificates = () => {
 
             <Button
               variant="contained"
+              disabled={loading.verify || !verifyId.trim()}
               sx={{
                 backgroundColor: "#1f4d3a",
                 "&:hover": { backgroundColor: "#1f4d3a" },
               }}
               onClick={handleVerifyCertificate}
             >
-              Verify
+              {loading.verify ? "Verifying…" : "Verify"}
             </Button>
           </Stack>
         </Box>
@@ -630,13 +669,19 @@ const Certificates = () => {
               </Button>
               <Button
                 variant="contained"
+                disabled={
+                  loading.issue ||
+                  !formData.studentName.trim() ||
+                  !formData.course.trim() ||
+                  !formData.expiryDate
+                }
                 sx={{
                   backgroundColor: "#1f4d3a",
                   "&:hover": { backgroundColor: "#1f4d3a" },
                 }}
                 onClick={handleIssueCertificate}
               >
-                Issue Certificate
+                {loading.issue ? "Issuing…" : "Issue Certificate"}
               </Button>
             </Stack>
           </Stack>

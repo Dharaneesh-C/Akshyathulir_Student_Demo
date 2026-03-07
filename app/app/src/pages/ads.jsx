@@ -42,15 +42,23 @@ function Ads({ page }) {
 
   /* ROTATE ADS EVERY 10s */
   useEffect(() => {
-    if (ads.length === 0) return;
+  if (ads.length === 0) return;
 
-    const interval = setInterval(() => {
-      setCurrentAdIndex((prev) => (prev + 1) % ads.length);
-      setShowAd(true);
-    }, 10000);
+  const interval = setInterval(() => {
+    setCurrentAdIndex((prev) => {
+      if (prev + 1 >= ads.length) {
+        clearInterval(interval); // stop after last ad
+        setShowAd(false);        // hide ad
+        return prev;
+      }
+      return prev + 1;
+    });
 
-    return () => clearInterval(interval);
-  }, [ads]);
+    setShowAd(true);
+  }, 10000);
+
+  return () => clearInterval(interval);
+}, [ads]);
 
   if (!currentAd) return null;
 
