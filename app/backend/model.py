@@ -40,11 +40,26 @@ class Placement(BaseModel):
     secondarySector: str
     companyPAN: str
     gstin: str
-    currentTeamSize: str
-    maleCount: str
-    femaleCount: str
+    currentTeamSize: int
+    maleCount: int
+    femaleCount: int
     companyWebsite: str
-    numberOfBranches: str   
+    numberOfBranches: int
+    studentsPlaced: Optional[int] = 0      # ← add this
+    highestPackage: Optional[float] = 0.0  # ← add this
+    averagePackage: Optional[float] = 0.0  # ← add this
+    adminEmail: str
+
+
+
+
+class PlacementRecord(BaseModel):
+    companyName: str
+    role: str
+    package: float
+    place: str
+    count: int
+    adminEmail: str  
     
 
 
