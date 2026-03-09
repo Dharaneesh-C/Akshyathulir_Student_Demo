@@ -1,37 +1,29 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import {
-  Card,
-  CardContent,
+  Paper,
   Typography,
   Button,
-  IconButton,
-  Box,
-  Stack,
+  Box
 } from "@mui/material";
-import Slide from "@mui/material/Slide";
-import CloseIcon from "@mui/icons-material/Close";
-import Api from "../pages/api";
 
 function Ads({ page }) {
+
   const [ads, setAds] = useState([]);
-  const [currentAdIndex, setCurrentAdIndex] = useState(0);
-  const [showAd, setShowAd] = useState(false);
+  const [adIndex, setAdIndex] = useState(0);
 
-  const currentAd = ads[currentAdIndex];
-
-  /* FETCH ADS FROM BACKEND */
+  /* FETCH ADS */
   useEffect(() => {
     const fetchAds = async () => {
       try {
         const email = localStorage.getItem("userEmail");
 
-        const res = await Api.get(`/ads/${email}/${page}`);
+        const res = await axios.get(
+          `http://127.0.0.1:8000/api/ads/${email}/${page}`
+        );
 
         setAds(res.data);
 
-        if (res.data.length > 0) {
-          setShowAd(true);
-        }
       } catch (err) {
         console.error(err);
       }
@@ -40,99 +32,135 @@ function Ads({ page }) {
     fetchAds();
   }, [page]);
 
-  /* ROTATE ADS EVERY 10s */
+
+
+  /* AUTO SLIDE ADS */
   useEffect(() => {
-  if (ads.length === 0) return;
 
-  const interval = setInterval(() => {
-    setCurrentAdIndex((prev) => {
-      if (prev + 1 >= ads.length) {
-        clearInterval(interval); // stop after last ad
-        setShowAd(false);        // hide ad
-        return prev;
-      }
-      return prev + 1;
-    });
+    if (ads.length === 0) return;
 
-    setShowAd(true);
-  }, 10000);
+    const interval = setInterval(() => {
+      setAdIndex((prev) => (prev + 1) % ads.length);
+    }, 5000);
 
-  return () => clearInterval(interval);
-}, [ads]);
+    return () => clearInterval(interval);
 
-  if (!currentAd) return null;
+  }, [ads]);
+
+
+
+  if (ads.length === 0) return null;
+
+
 
   return (
-    <Slide direction="left" in={showAd} mountOnEnter unmountOnExit>
-      <Card
+    <Paper
+      sx={{
+        width: "100%",
+        p: 1.5,
+        borderRadius: 3,
+        bgcolor: "#ffffff",
+        borderLeft: "4px solid #2e7d32",
+        overflow: "hidden",
+      }}
+    >
+
+      <Typography fontWeight="bold" mb={1} fontSize={14}>
+        Sponsored
+      </Typography>
+
+      {/* SLIDESHOW */}
+      <Box
         sx={{
-          position: "fixed",
-          bottom: 20,
-          right: 20,
-          width: 340,
-          zIndex: 999,
-          borderRadius: 3,
+          width: "100%",
+          height: 150,
           overflow: "hidden",
-          boxShadow: "0px 10px 30px rgba(0,0,0,0.25)",
+          position: "relative",
+          borderRadius: 3,
         }}
       >
-        <CardContent sx={{ p: 0, position: "relative" }}>
-          
-          {/* Close Button */}
-          <IconButton
-            size="small"
-            sx={{
-              position: "absolute",
-              top: 5,
-              right: 5,
-              backgroundColor: "#fff",
-            }}
-            onClick={() => setShowAd(false)}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
+        <Box
+          sx={{
+            display: "flex",
+            transform: `translateX(-${adIndex * 100}%)`,
+            transition: "transform 0.6s ease-in-out",
+          }}
+        >
 
-          {/* Ad Image */}
-          <Box
-            component="img"
-            src={currentAd.image}
-            alt="ad"
-            sx={{
-              width: "100%",
-              height: 170,
-              objectFit: "cover",
-            }}
-          />
+          {ads.map((ad, i) => (
+            <Box
+              key={i}
+              sx={{
+                minWidth: "100%",
+                position: "relative",
+                flexShrink: 0,
+              }}
+            >
 
-          {/* Ad Content */}
-          <Box sx={{ p: 2 }}>
-            <Stack spacing={1}>
-              <Typography fontWeight="bold">
-                {currentAd.title}
-              </Typography>
-
-              <Typography variant="body2" color="text.secondary">
-                {currentAd.description}
-              </Typography>
-
-              <Button
-                size="small"
-                variant="contained"
-                href={currentAd.link}
+              {/* Ad Image */}
+              <Box
+                component="img"
+                src={ad.image}
+                alt={ad.title}
                 sx={{
-                  mt: 1,
-                  backgroundColor: "#1f4d3a",
-                  "&:hover": { backgroundColor: "#1f4d3a" },
+                  width: "100%",
+                  height: 150,
+                  objectFit: "cover",
+                }}
+              />
+
+              {/* Overlay Content */}
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  p: 1,
+                  bgcolor: "rgba(0,0,0,0.55)",
+                  color: "#fff",
                 }}
               >
-                {currentAd.button}
-              </Button>
-            </Stack>
-          </Box>
 
-        </CardContent>
-      </Card>
-    </Slide>
+                <Typography fontSize={13} fontWeight={600} noWrap>
+                  {ad.title}
+                </Typography>
+
+                <Typography fontSize={11} sx={{ opacity: 0.9 }}>
+                  {ad.description}
+                </Typography>
+
+                <Button
+                  size="small"
+                  component="a"
+                  href={ad.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    mt: 0.5,
+                    bgcolor: "#2e7d32",
+                    color: "#fff",
+                    fontSize: "11px",
+                    px: 1,
+                    py: 0.3,
+                    textTransform: "none",
+                  }}
+                >
+                  {ad.button}
+                </Button>
+
+              </Box>
+            </Box>
+          ))}
+
+        </Box>
+      </Box>
+
+      <Typography fontSize={9} color="text.disabled" mt={0.5}>
+        Ads by partner platforms
+      </Typography>
+
+    </Paper>
   );
 }
 

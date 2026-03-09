@@ -17,7 +17,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import Ads from "./ads"
+import Ads from "./ads";
 
 import {
   LineChart,
@@ -84,76 +84,122 @@ export default function Dashboard() {
       {/* HEADER */}
 
       {/* KPI BAND */}
-      <Grid container spacing={2} mb={2}>
-        {[
-          {
-            label: "Total Students",
-            value: kpi_dashboard.totalStudents || 0,
-            icon: <GroupsIcon />,
-          },
-          {
-            label: "Active Courses",
-            value: kpi_dashboard.activeCourses || 0,
-            icon: <EventIcon />,
-          },
-          {
-            label: "Total Trainers",
-            value: kpi_dashboard.totalTrainers || 0,
-            icon: <StarIcon />,
-          },
-          {
-            label: "Total Placements",
-            value: kpi_dashboard.totalPlacements || 0,
-            icon: <CurrencyRupeeIcon />,
-          },
-          {
-            label: "Course Completion Rate",
-            value: `${kpi_dashboard.completionRate || 0}%`,
-            icon: <TrendingUpIcon />,
-          },
-          {
-            label: "Student Attendance",
-            value: `${kpi_dashboard.attendanceRate || 0}%`,
-            icon: <InsightsIcon />,
-          },
-        ].map((kpi, i) => (
-          <Grid item xs={12} sm={6} md={2.4} key={i}>
-            <Card
-              sx={{
-                height: "100%",
-                borderRadius: 4,
-                transition: "transform 0.3s ease, box-shadow 0.3s ease",
-                "&:hover": {
-                  transform: "translateY(-6px)",
-                  boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
-                },
-                background: "rgba(255,255,255,0.9)",
-                backdropFilter: "blur(10px)",
-              }}
-            >
-              <CardContent>
-                <Stack direction="row" spacing={4} alignItems="center">
-                  <Avatar sx={{ bgcolor: "#e8f5e9", color: "#2e7d32" }}>
-                    {kpi.icon}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {kpi.label}
-                    </Typography>
-                    <Typography
-                      variant="h6"
-                      fontWeight="bold"
-                      sx={{ color: COLORS.main }}
-                    >
-                      {kpi.value}
-                    </Typography>
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr 600px",
+          gridTemplateRows: "auto auto",
+          gap: 2,
+          mb: 4,
+        }}
+      >
+        {/* Students */}
+        <Card sx={{ borderRadius: 4 }}>
+          <CardContent>
+            <Stack direction="row" spacing={3} alignItems="center">
+              <Avatar sx={{ bgcolor: "#e8f5e9", color: "#2e7d32" }}>
+                <GroupsIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="body2">Total Students</Typography>
+                <Typography variant="h6" fontWeight="bold">
+                  {kpi_dashboard.totalStudents || 0}
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Courses */}
+        <Card sx={{ borderRadius: 4 }}>
+          <CardContent>
+            <Stack direction="row" spacing={3} alignItems="center">
+              <Avatar sx={{ bgcolor: "#e8f5e9", color: "#2e7d32" }}>
+                <EventIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="body2">Active Courses</Typography>
+                <Typography variant="h6" fontWeight="bold">
+                  {kpi_dashboard.activeCourses || 0}
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Trainers */}
+        <Card sx={{ borderRadius: 4 }}>
+          <CardContent>
+            <Stack direction="row" spacing={3} alignItems="center">
+              <Avatar sx={{ bgcolor: "#e8f5e9", color: "#2e7d32" }}>
+                <StarIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="body2">Total Trainers</Typography>
+                <Typography variant="h6" fontWeight="bold">
+                  {kpi_dashboard.totalTrainers || 0}
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* ADS (spans 2 rows) */}
+        <Box sx={{ gridRow: "span 2" }}>
+          <Ads page="dashboard" />
+        </Box>
+
+        {/* Placements */}
+        <Card sx={{ borderRadius: 4 }}>
+          <CardContent>
+            <Stack direction="row" spacing={3} alignItems="center">
+              <Avatar sx={{ bgcolor: "#e8f5e9", color: "#2e7d32" }}>
+                <CurrencyRupeeIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="body2">Total Placements</Typography>
+                <Typography variant="h6" fontWeight="bold">
+                  {kpi_dashboard.totalPlacements || 0}
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Completion */}
+        <Card sx={{ borderRadius: 4 }}>
+          <CardContent>
+            <Stack direction="row" spacing={3} alignItems="center">
+              <Avatar sx={{ bgcolor: "#e8f5e9", color: "#2e7d32" }}>
+                <TrendingUpIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="body2">Course Completion</Typography>
+                <Typography variant="h6" fontWeight="bold">
+                  {kpi_dashboard.completionRate || 0}%
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Attendance */}
+        <Card sx={{ borderRadius: 4 }}>
+          <CardContent>
+            <Stack direction="row" spacing={3} alignItems="center">
+              <Avatar sx={{ bgcolor: "#e8f5e9", color: "#2e7d32" }}>
+                <InsightsIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="body2">Student Attendance</Typography>
+                <Typography variant="h6" fontWeight="bold">
+                  {kpi_dashboard.attendanceRate || 0}%
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Box>
       {/* TABLE SECTION */}
       <Typography variant="h6" fontWeight="bold" mb={2}>
         Performance Summary
@@ -476,7 +522,6 @@ export default function Dashboard() {
           </Card>
         </Grid>
       </Grid>
-      <Ads page="dashboard" />
     </Box>
   );
 }

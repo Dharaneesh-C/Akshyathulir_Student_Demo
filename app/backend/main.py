@@ -20,6 +20,13 @@ app.include_router(placements.router, prefix="/api")
 app.include_router(startups.router, prefix="/api")
 app.include_router(certificates.router, prefix="/api")
 app.include_router(dashboard_routes.router, prefix="/api")
-
-
 app.include_router(ads.router, prefix="/api")
+
+from fastapi.staticfiles import StaticFiles
+import os
+
+# create uploads folder automatically
+os.makedirs("uploads", exist_ok=True)
+
+# serve images
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")

@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useEffect } from "react";
+import Api from "./api";
 import { styled } from "@mui/material/styles";
 import {
   Box,
@@ -23,7 +25,6 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import PersonIcon from "@mui/icons-material/Person";
 import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
 import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
-
 
 const drawerWidth = 280;
 
@@ -81,10 +82,29 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const [logo, setLogo] = useState("");
 
   const handleMouseEnter = () => setOpen(true);
   const handleMouseLeave = () => setOpen(false);
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const email = localStorage.getItem("userEmail");
 
+        const res = await Api.get(
+          `/startup/by-email/${encodeURIComponent(email)}`,
+        );
+
+        if (res.data.logo) {
+          setLogo(`http://127.0.0.1:8000/${res.data.logo}`);
+        }
+      } catch (error) {
+        console.error("Logo fetch error:", error);
+      }
+    };
+
+    fetchLogo();
+  }, []);
   return (
     <Box sx={{ display: "flex", bgcolor: "#E8F5E9", minHeight: "100vh" }}>
       <StyledDrawer
@@ -192,7 +212,11 @@ export default function Sidebar() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Tooltip title="Account settings">
               <IconButton size="small">
-                <Avatar sx={{ width: 32, height: 32 }} />
+                <Avatar
+                  src={logo}
+                  sx={{ width: 32, height: 32 }}
+                  onClick={() => navigate("/allform")}
+                />
               </IconButton>
             </Tooltip>
             <IconButton

@@ -134,6 +134,7 @@ const initialFormState = {
   phoneCountry: "India",
   phoneCode: "",
   phone: "",
+  logo: "",
 };
 const initialAddress = {
   fullAddress: "",
@@ -265,6 +266,7 @@ function App() {
           ...prev,
 
           // Personal
+          logo: data.logo || "",
           firstName: data.firstName || "",
           lastName: data.lastName || "",
           email: data.email || prev.email,
@@ -756,7 +758,30 @@ function App() {
       alert("Server error. Please try again.");
     }
   };
+  const handleLogoUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
+    const email = localStorage.getItem("userEmail");
+
+    const formDataUpload = new FormData();
+    formDataUpload.append("file", file);
+
+    const res = await Api.post(
+      `/startup/upload-logo/${email}`,
+      formDataUpload,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+
+    setFormData((prev) => ({
+      ...prev,
+      logo: res.data.logo,
+    }));
+  };
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -806,6 +831,49 @@ function App() {
             </Typography>
           </Box>
           <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 3, mb: 3 }}>
+              {/* Clickable Logo Upload */}
+              <Box
+                component="label"
+                sx={{
+                  cursor: isEditMode && !isEditable ? "default" : "pointer",
+                  display: "inline-block",
+                }}
+              >
+                <Box
+                  component="img"
+                  src={
+                    formData.logo
+                      ? `http://127.0.0.1:8000/${formData.logo}`
+                      : "/default-logo.png"
+                  }
+                  alt="Institute Logo"
+                  sx={{
+                    width: 90,
+                    height: 90,
+                    borderRadius: 2,
+                    objectFit: "cover",
+                    border: "2px solid #1f4d3a",
+                    transition: "0.2s",
+                    "&:hover": {
+                      opacity: isEditMode && !isEditable ? 1 : 0.8,
+                    },
+                  }}
+                />
+
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  disabled={isEditMode && !isEditable}
+                />
+              </Box>
+
+              <Typography variant="body2" color="text.secondary">
+                Click logo to upload / change
+              </Typography>
+            </Box>
             <FormRow>
               <TextField
                 label="CIN (Corporate Identification Number)"
@@ -891,7 +959,6 @@ function App() {
                 InputLabelProps={{ shrink: true }}
                 onChange={handleInputChange("dateOfEstablishment")}
                 error={!!errors.dateOfEstablishment}
-               
                 inputProps={{ min: twoYearsAgo, max: today }}
               />
               <TextField
