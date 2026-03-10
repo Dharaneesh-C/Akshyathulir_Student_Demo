@@ -28,7 +28,7 @@ import PhoneIcon from "@mui/icons-material/Phone";
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
-import Ads from "./ads";
+ 
 
 /* -------------------- INITIAL TRAINER STATE -------------------- */
 const initialTrainerState = {
@@ -785,7 +785,7 @@ function Trainers() {
           </Box>
         )}
       </Dialog>
-      <Ads page="trainers" />
+     
     </Box>
   );
 }

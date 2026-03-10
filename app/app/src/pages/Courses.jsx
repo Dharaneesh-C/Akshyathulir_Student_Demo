@@ -20,7 +20,7 @@ import Search from "@mui/icons-material/Search";
 import Visibility from "@mui/icons-material/Visibility";
 import Edit from "@mui/icons-material/Edit";
 import Delete from "@mui/icons-material/Delete";
-import Ads from "./ads";
+
 
 /* -------------------- INITIAL STATE -------------------- */
 const initialState = {
@@ -174,7 +174,12 @@ const Courses = () => {
     <Box p={4}>
       {/* HEADER */}
       {/* stack arrange the component */}
-      <Stack direction="row" justifyContent="space-between" mb={2}>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={2}
+      >
         <Box>
           <Typography variant="h4" fontWeight="bold">
             Courses
@@ -183,19 +188,21 @@ const Courses = () => {
         </Box>
 
         <Button
-          variant="outlined" //border
+          variant="outlined"
           onClick={() => setOpenAdd(true)}
           sx={{
             borderColor: "#1f4d3a",
             color: "#1f4d3a",
-            height: 32,
-            px: 1.5,
-            fontSize: "0.8rem",
+            height: 36,
+            px: 2,
+            fontSize: "0.85rem",
           }}
         >
           Add Course
         </Button>
       </Stack>
+
+      
 
       {/* SEARCH */}
       <Card sx={{ mb: 3 }}>
@@ -675,7 +682,6 @@ const Courses = () => {
           </Box>
         )}
       </Dialog>
-      <Ads page="courses" />
     </Box>
   );
 };

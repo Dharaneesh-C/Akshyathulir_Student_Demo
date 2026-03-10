@@ -33,7 +33,6 @@ import Schedule from "@mui/icons-material/Schedule";
 import Close from "@mui/icons-material/Close";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import Ads from "./ads"
 
 
 /* -------------------- DATA -------------------- */
@@ -77,28 +76,30 @@ const Certificates = () => {
       c.id?.toLowerCase().includes(query)
     );
   });
-const fetchCertificates = React.useCallback(async () => {
-  if (!adminEmail) return;
-  try {
-    const res = await Api.get(`/certificates/${adminEmail}`);
+  const fetchCertificates = React.useCallback(async () => {
+    if (!adminEmail) return;
+    try {
+      const res = await Api.get(`/certificates/${adminEmail}`);
 
-    const formatted = res.data.map((c) => ({
-      ...c,
-      id: c._id,
-    }));
+      const formatted = res.data.map((c) => ({
+        ...c,
+        id: c._id,
+      }));
 
-    setCertificates(formatted);
-  } catch (err) {
-    console.error(err);
-  }
-}, [adminEmail]);
+      setCertificates(formatted);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [adminEmail]);
   const handleIssueCertificate = async () => {
     if (
       !formData.studentName.trim() ||
       !formData.course.trim() ||
       !formData.expiryDate
     ) {
-      alert("❌ Please complete all required fields (student name, course, expiry date)");
+      alert(
+        "❌ Please complete all required fields (student name, course, expiry date)",
+      );
       return;
     }
 
@@ -142,19 +143,19 @@ const fetchCertificates = React.useCallback(async () => {
   };
 
   const fetchStats = React.useCallback(async () => {
-  if (!adminEmail) return;
-  try {
-    const res = await Api.get(`/certificates/stats/${adminEmail}`);
-    setStats(res.data);
-  } catch (err) {
-    console.error(err);
-  }
-}, [adminEmail]);
+    if (!adminEmail) return;
+    try {
+      const res = await Api.get(`/certificates/stats/${adminEmail}`);
+      setStats(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [adminEmail]);
 
   React.useEffect(() => {
-  fetchCertificates();
-  fetchStats();
-}, [fetchCertificates, fetchStats]);
+    fetchCertificates();
+    fetchStats();
+  }, [fetchCertificates, fetchStats]);
   const handleVerifyCertificate = async () => {
     const id = verifyId.trim();
     if (!id) {
@@ -299,7 +300,9 @@ const fetchCertificates = React.useCallback(async () => {
                   <Typography color="text.secondary">
                     Verified This Month
                   </Typography>
-                  <Typography variant="h5">{stats.verifiedThisMonth}</Typography>
+                  <Typography variant="h5">
+                    {stats.verifiedThisMonth}
+                  </Typography>
                 </Box>
                 <CheckCircle color="primary" />
               </Stack>
@@ -334,6 +337,7 @@ const fetchCertificates = React.useCallback(async () => {
             </CardContent>
           </Card>
         </Grid>
+        
       </Grid>
       {/*Certificate Pre View*/}
       <Card ref={previewRef} sx={{ mb: 4 }}>
@@ -444,7 +448,9 @@ const fetchCertificates = React.useCallback(async () => {
             <TableBody>
               {filteredCertificates.map((c) => (
                 <TableRow key={c.id || c._id} hover>
-                  <TableCell sx={{ fontFamily: "monospace" }}>{c.id || c._id}</TableCell>
+                  <TableCell sx={{ fontFamily: "monospace" }}>
+                    {c.id || c._id}
+                  </TableCell>
                   <TableCell>{c.studentName}</TableCell>
                   <TableCell>{c.course}</TableCell>
                   <TableCell>{c.grade ?? "-"}</TableCell>
@@ -687,7 +693,6 @@ const fetchCertificates = React.useCallback(async () => {
           </Stack>
         </Box>
       </Dialog>
-     <Ads page="certificates" />
     </Box>
   );
 };

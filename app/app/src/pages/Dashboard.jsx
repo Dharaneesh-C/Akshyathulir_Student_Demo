@@ -87,7 +87,7 @@ export default function Dashboard() {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr 600px",
+          gridTemplateColumns: "1fr 1fr 1fr 400px",
           gridTemplateRows: "auto auto",
           gap: 2,
           mb: 4,
@@ -145,7 +145,7 @@ export default function Dashboard() {
         </Card>
 
         {/* ADS (spans 2 rows) */}
-        <Box sx={{ gridRow: "span 2" }}>
+        <Box sx={{ gridRow: "span 2 " }}>
           <Ads page="dashboard" />
         </Box>
 

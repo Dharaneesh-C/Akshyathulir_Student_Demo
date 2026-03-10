@@ -788,7 +788,7 @@ function App() {
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Typography
           variant="h3"
-          align="center"
+          
           sx={{ mb: 4, color: "#1f4d3a", fontWeight: "bold", fontSize: "34px" }}
         >
           Training Institute Form
@@ -831,13 +831,15 @@ function App() {
             </Typography>
           </Box>
           <CardContent sx={{ p: 3 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 3, mb: 3 }}>
+            <Box sx={{  alignItems: "center", gap: 3, mb: 3 }}>
               {/* Clickable Logo Upload */}
               <Box
                 component="label"
                 sx={{
+                  width: 100,
+                  height: 100,
                   cursor: isEditMode && !isEditable ? "default" : "pointer",
-                  display: "inline-block",
+                  display: "flex",
                 }}
               >
                 <Box

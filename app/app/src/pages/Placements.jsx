@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import {
   Box,
@@ -12,7 +12,6 @@ import {
   TableHead,
   TableRow,
   Avatar,
-  AvatarGroup,
   Chip,
   Card,
   CardContent,
@@ -26,7 +25,6 @@ import BusinessIcon from "@mui/icons-material/Business";
 import PeopleIcon from "@mui/icons-material/People";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import CloseIcon from "@mui/icons-material/Close";
-
 import AddIcon from "@mui/icons-material/Add";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import Ads from "./ads";
@@ -54,21 +52,17 @@ const Placements = () => {
     recruiters: 0,
     averagePackage: 0,
   });
-
   const [placementRecords, setPlacementRecords] = useState([]);
-
   const [recordDialogOpen, setRecordDialogOpen] = useState(false);
-
   const [recordFormData, setRecordFormData] = useState({
     companyName: "",
+    companyPAN: "",
     role: "",
     package: "",
     place: "",
     count: "",
   });
-
   const [recordErrors, setRecordErrors] = useState({});
-
 
   const eduToday = new Date().toISOString().split("T")[0];
   const eduDate = new Date();
@@ -89,7 +83,11 @@ const Placements = () => {
     companyWebsite: "",
     numberOfBranches: "1",
     branchAddresses: [{ ...initialAddress }],
+    logo:"",
   });
+
+  // ── Company Logo State ──
+  const [companyLogoFile, setCompanyLogoFile] = useState(null);
 
   const [eduErrors, setEduErrors] = useState({});
   const [, setLoading] = useState(false);
@@ -97,21 +95,33 @@ const Placements = () => {
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
 
-  // ── Placement Records State ──
-  // const [placementRecords, setPlacementRecords] = useState([]);
-  // const [recordDialogOpen, setRecordDialogOpen] = useState(false);
-  // const [recordFormData, setRecordFormData] = useState({
-  //   companyName: "", role: "", package: "", place: "", count: "",
-  // });
-  // const [recordErrors, setRecordErrors] = useState({});
-
-  const topRecruiters = [
-    { name: "TCS", logo: "https://www.google.com/s2/favicons?domain=tcs.com&sz=64" },
-    { name: "Infosys", logo: "https://www.google.com/s2/favicons?domain=infosys.com&sz=64" },
-    { name: "Wipro", logo: "https://www.google.com/s2/favicons?domain=wipro.com&sz=64" },
-    { name: "Cognizant", logo: "https://www.google.com/s2/favicons?domain=cognizant.com&sz=64" },
-    { name: "Accenture", logo: "https://www.google.com/s2/favicons?domain=accenture.com&sz=64" },
-  ];
+  // ── Derive top 5 recruiters dynamically from placement records ──
+  const getTopRecruiters = (records, companiesList) => {
+    // Group by companyPAN (most reliable key), fallback to name
+    const companyMap = {};
+    records.forEach((r) => {
+      const key = (r.companyPAN || r.companyName || "").trim().toUpperCase();
+      const pkg = parseFloat(r.package) || 0;
+      if (!companyMap[key] || pkg > companyMap[key].package) {
+        // Cross-reference registered companies for the logo
+        const registered = companiesList.find(
+          (c) =>
+            (r.companyPAN && c.companyPAN?.trim().toUpperCase() === r.companyPAN.trim().toUpperCase()) ||
+            c.startupName.trim().toLowerCase() === r.companyName.trim().toLowerCase()
+        );
+        const logo =
+          registered?.companyLogo ||
+          registered?.companyLogoUrl ||
+          r.companyLogo ||
+          null;
+        companyMap[key] = { name: r.companyName, package: pkg, logo };
+      }
+    });
+    return Object.values(companyMap)
+      .sort((a, b) => b.package - a.package)
+      .slice(0, 5)
+      .map((c) => ({ name: c.name, logo: c.logo }));
+  };
 
   const getCompanies = async () => {
     try {
@@ -127,7 +137,11 @@ const Placements = () => {
     try {
       const email = localStorage.getItem("userEmail");
       const res = await Api.get(`/placements/records/${email}`);
-      setPlacementRecords(res.data);
+      // Sort descending by package
+      const sorted = (res.data || []).slice().sort(
+        (a, b) => parseFloat(b.package) - parseFloat(a.package)
+      );
+      setPlacementRecords(sorted);
     } catch (err) {
       console.log(err);
     }
@@ -150,48 +164,79 @@ const Placements = () => {
     getPlacementRecords();
   }, []);
 
-  const getInitials = (name = "") =>
-    name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2) || "CO";
+  const resolveLogoUrl = (logo) => {
+    if (!logo) return "/default-logo.png";
+    if (typeof logo !== "string") return "/default-logo.png";
+    const normalized = logo.trim();
+    if (
+      normalized.startsWith("http://") ||
+      normalized.startsWith("https://") ||
+      normalized.startsWith("data:") ||
+      normalized.startsWith("blob:")
+    ) {
+      return normalized;
+    }
+    return `http://127.0.0.1:8000/${normalized.replace(/^\/+/ , "")}`;
+  };
+
+  // ── Dynamic top recruiters — recomputes when records OR companies load ──
+  const topRecruiters = useMemo(() => {
+    if (placementRecords.length > 0 && companies.length > 0) {
+      return getTopRecruiters(placementRecords, companies);
+    }
+    return [];
+  }, [placementRecords, companies]);
 
   // ── Placement Record Handlers ──
- 
+  const validateRecordForm = () => {
+    let newErrors = {};
+    if (!recordFormData.companyName.trim()) newErrors.companyName = "Company name is required";
+    if (!recordFormData.companyPAN.trim()) newErrors.companyPAN = "Company PAN is required";
+    else {
+      const matchedCompany = companies.find(
+        (c) => c.companyPAN.trim().toUpperCase() === recordFormData.companyPAN.trim().toUpperCase()
+      );
+      if (!matchedCompany) newErrors.companyPAN = "PAN not found. Register the company first.";
+    }
+    if (!recordFormData.role.trim()) newErrors.role = "Role is required";
+    if (!recordFormData.package.trim()) newErrors.package = "Package is required";
+    else if (!/^\d+(\.\d+)?$/.test(recordFormData.package)) newErrors.package = "Enter valid number";
+    if (!recordFormData.place.trim()) newErrors.place = "Place is required";
+    if (!recordFormData.count.trim()) newErrors.count = "Count is required";
+    else if (!/^[0-9]+$/.test(recordFormData.count)) newErrors.count = "Enter valid number";
+    setRecordErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-const handleAddRecord = async () => {
-  try {
-    const email = localStorage.getItem("userEmail");
+  const handleAddRecord = async () => {
+    if (!validateRecordForm()) return;
+    try {
+      const email = localStorage.getItem("userEmail");
+      const matchedCompany = companies.find(
+        (c) => c.companyPAN.trim().toUpperCase() === recordFormData.companyPAN.trim().toUpperCase()
+      );
 
-    const payload = {
-      companyName: recordFormData.companyName,
-      role: recordFormData.role,
-      package: Number(recordFormData.package),
-      place: recordFormData.place,
-      count: Number(recordFormData.count),
-      adminEmail: email,
-    };
-
-    console.log("Sending placement record:", payload);
-
-    await Api.post("/placements/records", payload);
-
-    alert("✅ Placement Record Added!");
-
-    getPlacementRecords();
-
-    setRecordDialogOpen(false);
-
-    setRecordFormData({
-      companyName: "",
-      role: "",
-      package: "",
-      place: "",
-      count: "",
-    });
-
-  } catch (err) {
-    console.error(err);
-    alert("❌ Error adding record");
-  }
-};
+      const payload = {
+        companyName: recordFormData.companyName,
+        companyPAN: recordFormData.companyPAN.trim().toUpperCase(),
+        companyLogo: matchedCompany?.companyLogo || matchedCompany?.companyLogoUrl || "",
+        role: recordFormData.role,
+        package: Number(recordFormData.package),
+        place: recordFormData.place,
+        count: Number(recordFormData.count),
+        adminEmail: email,
+      };
+      console.log("Sending placement record:", payload);
+      await Api.post("/placements/records", payload);
+      alert("✅ Placement Record Added!");
+      getPlacementRecords();
+      setRecordDialogOpen(false);
+      setRecordFormData({ companyName: "", companyPAN: "", role: "", package: "", place: "", count: "" });
+    } catch (err) {
+      console.error(err);
+      alert("❌ Error adding record");
+    }
+  };
 
   // ── Company Registration Handlers ──
   const eduHandleBranchCountChange = (e) => {
@@ -246,53 +291,62 @@ const handleAddRecord = async () => {
     });
     if (eduErrors[field]) setEduErrors((prevErr) => ({ ...prevErr, [field]: "" }));
   };
+const eduHandleSubmit = async () => {
+  try {
+    setLoading(true);
+    const email = localStorage.getItem("userEmail");
 
-  const eduHandleSubmit = async () => {
-    try {
-      setLoading(true);
-      const email = localStorage.getItem("userEmail");
-
-      // Duplicate check
-      const isDuplicate = companies.some(
-        (c) =>
-          c.startupName.trim().toLowerCase() === eduFormData.startupName.trim().toLowerCase() &&
-          c.companyPAN.trim().toUpperCase() === eduFormData.companyPAN.trim().toUpperCase()
-      );
-      if (isDuplicate) {
-        setEduErrors((prev) => ({
-          ...prev,
-          startupName: "This company is already registered",
-          companyPAN: "This PAN is already registered",
-        }));
-        setLoading(false);
-        return;
-      }
-
-      await Api.post("/placements/", {
-        startupName: eduFormData.startupName,
-        legalStatus: eduFormData.legalStatus,
-        dateOfEstablishment: eduFormData.dateOfEstablishment,
-        primarySector: eduFormData.primarySector,
-        secondarySector: eduFormData.secondarySector || "",
-        companyPAN: eduFormData.companyPAN,
-        gstin: eduFormData.gstin || "",
-        currentTeamSize: Number(eduFormData.currentTeamSize),
-        maleCount: Number(eduFormData.maleCount),
-        femaleCount: Number(eduFormData.femaleCount),
-        companyWebsite: eduFormData.companyWebsite || "",
-        numberOfBranches: Number(eduFormData.numberOfBranches),
-        adminEmail: email,
-      });
-      alert("✅ Company Registered Successfully!");
-      getCompanies();
-      eduHandleReset();
-    } catch (error) {
-      console.log(error);
-      alert("❌ Error while submitting!");
-    } finally {
+    const isDuplicate = companies.some(
+      (c) =>
+        c.startupName.trim().toLowerCase() === eduFormData.startupName.trim().toLowerCase() &&
+        c.companyPAN.trim().toUpperCase() === eduFormData.companyPAN.trim().toUpperCase()
+    );
+    if (isDuplicate) {
+      setEduErrors((prev) => ({
+        ...prev,
+        startupName: "This company is already registered",
+        companyPAN: "This PAN is already registered",
+      }));
       setLoading(false);
+      return;
     }
-  };
+
+    // ⭐ FormData — send raw file, no base64
+    const formData = new FormData();
+    formData.append("startupName", eduFormData.startupName);
+    formData.append("legalStatus", eduFormData.legalStatus);
+    formData.append("dateOfEstablishment", eduFormData.dateOfEstablishment);
+    formData.append("primarySector", eduFormData.primarySector);
+    formData.append("secondarySector", eduFormData.secondarySector || "");
+    formData.append("companyPAN", eduFormData.companyPAN);
+    formData.append("gstin", eduFormData.gstin || "");
+    formData.append("currentTeamSize", Number(eduFormData.currentTeamSize));
+    formData.append("maleCount", Number(eduFormData.maleCount));
+    formData.append("femaleCount", Number(eduFormData.femaleCount));
+    formData.append("companyWebsite", eduFormData.companyWebsite || "");
+    formData.append("numberOfBranches", Number(eduFormData.numberOfBranches));
+    formData.append("adminEmail", email);
+    if (companyLogoFile) {
+      formData.append("companyLogo", companyLogoFile); // ⭐ raw file
+    }
+
+    await Api.post("/placements/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    alert("✅ Company Registered Successfully!");
+    getCompanies();
+    eduHandleReset();
+  } catch (error) {
+    console.error("Full error:", error.response?.data || error.message);
+    alert("❌ Error: " + (error.response?.data?.detail || error.message));
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
 
   const eduHandleReset = () => {
     setEduFormData({
@@ -302,9 +356,26 @@ const handleAddRecord = async () => {
       numberOfBranches: "1", branchAddresses: [{ ...initialAddress }],
     });
     setEduErrors({});
+    setCompanyLogoFile(null);
   };
 
-  const sectors = ["HealthTech","FinTech","EdTech","AgriTech","E-Commerce","AI / ML","IoT","SaaS","Blockchain","Other"];
+  const sectors = [
+    "HealthTech", "FinTech", "EdTech", "AgriTech", "E-Commerce",
+    "AI / ML", "IoT", "SaaS", "Blockchain", "Other",
+  ];
+ const handleLogoUpload = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  setCompanyLogoFile(file); // ⭐ important
+
+  const preview = URL.createObjectURL(file);
+
+  setEduFormData((prev) => ({
+    ...prev,
+    logo: preview,
+  }));
+};
 
   return (
     <Box sx={{ flexGrow: 1, p: 3, backgroundColor: EDU_COLORS.background, minHeight: "100vh" }}>
@@ -324,7 +395,13 @@ const handleAddRecord = async () => {
           { icon: <PeopleIcon color="primary" />, value: placementStats.studentsPlaced, title: "Students Placed", subtitle: "Total placements" },
           { icon: <BusinessIcon color="primary" />, value: placementStats.recruiters, title: "Recruiters", subtitle: "Companies visited" },
           { icon: <TrendingUpIcon color="primary" />, value: `₹${placementStats.averagePackage} LPA`, title: "Average Package", subtitle: "Across all branches" },
-          { icon: <BusinessIcon color="primary" />, value: "", title: "Top Recruiters", subtitle: "", logos: topRecruiters },
+          {
+            icon: <BusinessIcon color="primary" />,
+            value: "",
+            title: "Top Recruiters",
+            subtitle: topRecruiters.length > 0 ? "By highest package" : "No records yet",
+            logos: topRecruiters.length > 0 ? topRecruiters : null,
+          },
         ].map((card, index) => (
           <Grid item xs={12} sm={6} md={2.4} key={index}>
             <Card sx={{
@@ -337,17 +414,41 @@ const handleAddRecord = async () => {
                 {card.icon}
               </Box>
               {card.logos ? (
-                <AvatarGroup max={5} sx={{ justifyContent: "center", mb: 1 }}>
-                  {card.logos.map((company, i) => (
-                    <Avatar key={i} src={company.logo} alt={company.name} sx={{ width: 40, height: 40, bgcolor: "#1a3e36", fontSize: 14 }}>
-                      {company.name.charAt(0)}
-                    </Avatar>
-                  ))}
-                </AvatarGroup>
+                <>
+                  <Box sx={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 0.5, mb: 1 }}>
+                    {card.logos.map((company, i) => (
+                      <Box
+                        key={i}
+                        title={company.name}
+                        sx={{
+                          width: 36, height: 36, borderRadius: "50%",
+                          overflow: "hidden", border: "2px solid #e6f4ea",
+                          bgcolor: "#1a3e36", display: "flex", alignItems: "center", justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {company.logo ? (
+                          <img
+                            src={company.logo}
+                            alt={company.name}
+                            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                          />
+                        ) : (
+                          <Box sx={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 700 }}>
+                            {company.name.charAt(0).toUpperCase()}
+                          </Box>
+                        )}
+                      </Box>
+                    ))}
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10, lineHeight: 1.3, px: 1 }}>
+                    {card.logos.map((c) => c.name).join(", ")}
+                  </Typography>
+                </>
               ) : (
                 <Typography variant="h5" fontWeight="bold">{card.value}</Typography>
               )}
-              <Typography fontWeight={600}>{card.title}</Typography>
+              <Typography fontWeight={600} mt={card.logos ? 0.5 : 0}>{card.title}</Typography>
               <Typography variant="body2" color="text.secondary">{card.subtitle}</Typography>
             </Card>
           </Grid>
@@ -360,7 +461,6 @@ const handleAddRecord = async () => {
           <Typography variant="h6" sx={{ mb: 1, fontWeight: "bold", color: EDU_COLORS.primary }}>
             Our Top Recruiters
           </Typography>
-          
           <Box sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 2, mb: 4 }}>
             {companies.map((c, index) => (
               <Card
@@ -371,9 +471,18 @@ const handleAddRecord = async () => {
                   border: "1px solid #e0e0e0", boxShadow: "none",
                   transition: "border-color 0.2s, box-shadow 0.2s",
                   "&:hover": { borderColor: "#1a3e36", boxShadow: "0 0 0 2px #1a3e3620" },
-                  height: 80, display: "flex", alignItems: "center", justifyContent: "center",
+                  height: 80, display: "flex", alignItems: "center", justifyContent: "center", gap: 1, px: 1,
                 }}
               >
+                {(c.companyLogo || c.companyLogoUrl) && (
+                  <Box sx={{ width: 40, height: 40, borderRadius: 2, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <img
+                      src={c.companyLogo || c.companyLogoUrl}
+                      alt={c.startupName}
+                      style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                    />
+                  </Box>
+                )}
                 <Typography fontWeight={600} fontSize={15}>{c.startupName}</Typography>
               </Card>
             ))}
@@ -381,20 +490,17 @@ const handleAddRecord = async () => {
         </>
       )}
 
-     
-
       {/* Placement Records Table */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
         <Typography variant="h6" sx={{ fontWeight: "bold", color: EDU_COLORS.primary }}>
           Placement Records
         </Typography>
-        {/* OPTION 1 — Standalone Add Record Button */}
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           sx={{ bgcolor: EDU_COLORS.primary, textTransform: "none", fontWeight: 600, borderRadius: 2, "&:hover": { bgcolor: "#0f2620" } }}
           onClick={() => {
-            setRecordFormData({ companyName: "", role: "", package: "", place: "", count: "" });
+            setRecordFormData({ companyName: "", companyPAN: "", role: "", package: "", place: "", count: "" });
             setRecordErrors({});
             setRecordDialogOpen(true);
           }}
@@ -410,7 +516,7 @@ const handleAddRecord = async () => {
               <TableCell sx={{ color: "white", fontWeight: 600 }}>#</TableCell>
               <TableCell sx={{ color: "white", fontWeight: 600 }}>Company Name</TableCell>
               <TableCell sx={{ color: "white", fontWeight: 600 }}>Role</TableCell>
-              <TableCell sx={{ color: "white", fontWeight: 600 }}>Package (LPA)</TableCell>
+              <TableCell sx={{ color: "white", fontWeight: 600 }}>Package (LPA) ↓</TableCell>
               <TableCell sx={{ color: "white", fontWeight: 600 }}>Place</TableCell>
               <TableCell sx={{ color: "white", fontWeight: 600 }}>Count</TableCell>
             </TableRow>
@@ -454,21 +560,54 @@ const handleAddRecord = async () => {
         </Table>
       </TableContainer>
 
-      {/* New Company Registration Form */}
+      {/* New Client Registration Form */}
       <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold", color: EDU_COLORS.primary }}>
-        New Company Registration
+        New Client Registration
       </Typography>
       <Card sx={{ mb: 3, border: "2px solid #1f4d3a" }}>
         <Box sx={{ backgroundColor: EDU_COLORS.primary, color: "white", p: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: "20px" }}>Company Details</Typography>
+          <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: "20px" }}>Client Details</Typography>
         </Box>
+       
+
         <CardContent sx={{ p: 3 }}>
+           {/* ── Company Logo Upload ── */}
+            <Box sx={{ alignItems: "center", gap: 3, mb: 3 }}>
+              {/* Clickable Logo Upload */}
+              <Box component="label" sx={{ width: 100,
+                    height: 100,cursor: "pointer", display: "flex" }}>
+                <Box
+                  component="img"
+                  src={resolveLogoUrl(eduFormData.logo)}
+                  alt="Institute Logo"
+                  sx={{
+                    width: 90,
+                    height: 90,
+                    borderRadius: 1,
+                    objectFit: "cover",
+                    border: "1px solid #1f4d3a",
+                    transition: "0.2s",
+                  }}
+                />
+
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                />
+              </Box>
+
+              <Typography variant="body2" color="text.secondary">
+                Click logo to upload / change
+              </Typography>
+            </Box>
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 4 }}>
               <TextField fullWidth label="Startup Name *" value={eduFormData.startupName}
                 onChange={eduHandleInputChange("startupName")} error={!!eduErrors.startupName} helperText={eduErrors.startupName} />
             </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs:12, md:4}}>
               <TextField select fullWidth label="Legal Status *" value={eduFormData.legalStatus}
                 onChange={eduHandleInputChange("legalStatus")} error={!!eduErrors.legalStatus} helperText={eduErrors.legalStatus}>
                 <MenuItem value="Private Limited">Private Limited</MenuItem>
@@ -483,13 +622,13 @@ const handleAddRecord = async () => {
                 inputProps={{ min: eduTwoYearsAgo, max: eduToday }}
                 error={!!eduErrors.dateOfEstablishment} helperText={eduErrors.dateOfEstablishment} />
             </Grid>
-            <Grid size={{ xs: 12, md: 2 }}>
+            <Grid  size={{ xs: 12, md: 2 }} >
               <TextField select fullWidth label="Primary Sector *" value={eduFormData.primarySector}
                 onChange={eduHandleInputChange("primarySector")} error={!!eduErrors.primarySector} helperText={eduErrors.primarySector}>
                 {sectors.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid size={{ xs: 12, md: 2 }}>
+            <Grid size={{ xs: 12, md: 2}}>
               <TextField select fullWidth label="Secondary Sector" value={eduFormData.secondarySector}
                 onChange={eduHandleInputChange("secondarySector")}>
                 <MenuItem value="">None</MenuItem>
@@ -504,7 +643,7 @@ const handleAddRecord = async () => {
             <Grid size={{ xs: 12, md: 2 }}>
               <TextField fullWidth label="GSTIN / CIN" value={eduFormData.gstin} onChange={eduHandleInputChange("gstin")} />
             </Grid>
-            <Grid size={{ xs: 12, md: 2 }}>
+            <Grid size={{ xs: 12, md: 2 }}   >
               <TextField fullWidth type="number" label="Current Team Size *" value={eduFormData.currentTeamSize}
                 onChange={eduHandleInputChange("currentTeamSize")} inputProps={{ min: 0 }}
                 error={!!eduErrors.currentTeamSize} helperText={eduErrors.currentTeamSize} />
@@ -514,7 +653,7 @@ const handleAddRecord = async () => {
                 onChange={eduHandleInputChange("maleCount")} inputProps={{ min: 0 }}
                 error={!!eduErrors.maleCount} helperText={eduErrors.maleCount} />
             </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid  size={{ xs: 12, md: 4 }}>
               <TextField fullWidth type="number" label="Female Employees *" value={eduFormData.femaleCount}
                 onChange={eduHandleInputChange("femaleCount")} inputProps={{ min: 0 }}
                 error={!!eduErrors.femaleCount} helperText={eduErrors.femaleCount} />
@@ -522,11 +661,13 @@ const handleAddRecord = async () => {
             <Grid size={{ xs: 12, md: 4 }}>
               <TextField fullWidth label="Company Website" value={eduFormData.companyWebsite} onChange={eduHandleInputChange("companyWebsite")} />
             </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid  size={{ xs: 12, md: 4 }}>
               <TextField fullWidth type="number" label="Number of Branches *" value={eduFormData.numberOfBranches}
                 onChange={eduHandleBranchCountChange} inputProps={{ min: 1, max: 20 }}
                 error={!!eduErrors.numberOfBranches} helperText={eduErrors.numberOfBranches} />
             </Grid>
+
+            
             <Grid item xs={12}>
               <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 3 }}>
                 <Button type="submit" variant="contained" size="large" onClick={eduHandleSubmit}
@@ -545,89 +686,84 @@ const handleAddRecord = async () => {
       {/* ── View Company Dialog ── */}
       <Dialog open={viewOpen} onClose={() => setViewOpen(false)} maxWidth="sm" fullWidth
         PaperProps={{ sx: { borderRadius: 4, overflow: "hidden" } }}>
-       {selectedCompany && (
-  <Box>
-    {/* Close */}
-    <Box sx={{ display: "flex", justifyContent: "flex-end", p: 1 }}>
-      <IconButton onClick={() => setViewOpen(false)}><CloseIcon /></IconButton>
-    </Box>
-
-    {/* Header */}
-    <Box sx={{ display: "flex", alignItems: "center", gap: 3, px: 4, pb: 3, mt: -2 }}>
-      <Avatar sx={{ width: 90, height: 90, fontSize: 28, fontWeight: 700, bgcolor: "#e6f4ea", color: EDU_COLORS.primary }}>
-        {getInitials(selectedCompany.startupName)}
-      </Avatar>
-      <Box>
-        <Typography variant="h5" fontWeight={700}>{selectedCompany.startupName}</Typography>
-        <Typography color="text.secondary" mb={1}>{selectedCompany.primarySector}</Typography>
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-          <Chip label={selectedCompany.legalStatus} size="small"
-            sx={{ bgcolor: "#e6f4ea", color: EDU_COLORS.primary, fontWeight: 600 }} />
-          {selectedCompany.secondarySector && (
-            <Chip label={selectedCompany.secondarySector} size="small" variant="outlined" />
-          )}
-        </Box>
-      </Box>
-    </Box>
-
-    {/* Stats Row — equal size cards */}
-    <Box sx={{ px: 4, pb: 3, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2 }}>
-      {[
-        { label: "Team Size", value: selectedCompany.currentTeamSize },
-        { label: "Male", value: selectedCompany.maleCount },
-        { label: "Female", value: selectedCompany.femaleCount },
-        { label: "Branches", value: selectedCompany.numberOfBranches },
-      ].map((stat) => (
-        <Box key={stat.label}
-          sx={{
-            bgcolor: "#f1f8f4", borderRadius: 2,
-            py: 2, px: 1, textAlign: "center",
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center",
-            minHeight: 20,
-          }}
-        >
-          <Typography color="text.secondary" fontSize={12} mb={0.5}>{stat.label}</Typography>
-          <Typography fontWeight={700} fontSize={20}>{stat.value}</Typography>
-        </Box>
-      ))}
-    </Box>
-
-    {/* Details Section */}
-    <Box sx={{ borderTop: "1px solid #eee", px: 4, py: 3 }}>
-      <Grid container spacing={2}>
-        {[
-          { label: "PAN", value: selectedCompany.companyPAN },
-          { label: "GSTIN / CIN", value: selectedCompany.gstin || "—" },
-          {
-            // icon: <BusinessIcon fontSize="small" />,
-            label: "Est. Date",
-            value: selectedCompany.dateOfEstablishment
-              ? new Date(selectedCompany.dateOfEstablishment).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
-              : "—"
-          },
-          {  label: "Website", value: selectedCompany.companyWebsite || "—" },
-        ].map((row) => (
-          <Grid item xs={12} sm={6} key={row.label}>
-            <Box sx={{
-              display: "flex", alignItems: "flex-start", gap: 1.5,
-              
-            }}>
-              <Box sx={{ color: EDU_COLORS.primary, mt: 0.3 }}>{row.icon}</Box>
+        {selectedCompany && (
+          <Box>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", p: 1 }}>
+              <IconButton onClick={() => setViewOpen(false)}><CloseIcon /></IconButton>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 3, px: 4, pb: 3, mt: -2 }}>
+              {(() => {
+                const logoSrc = selectedCompany.companyLogo || selectedCompany.companyLogoUrl || null;
+                return logoSrc ? (
+                  <Box sx={{ width: 90, height: 90, borderRadius: 3, overflow: "hidden", border: "2px solid #e6f4ea", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "#fff" }}>
+                    <img src={logoSrc} alt={selectedCompany.startupName} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                  </Box>
+                ) : (
+                  <Avatar
+                    src={resolveLogoUrl(selectedCompany.companyLogo || selectedCompany.companyLogoUrl)}
+                    sx={{ width: 90, height: 90 }}
+                  >
+                    {!selectedCompany.companyLogo && selectedCompany.startupName?.charAt(0)}
+                  </Avatar>
+                );
+              })()}
               <Box>
-                <Typography fontSize={11} color="text.secondary" mb={0.3}>{row.label}</Typography>
-                <Typography fontSize={14} fontWeight={600}>{row.value}</Typography>
+                <Typography variant="h5" fontWeight={700}>{selectedCompany.startupName}</Typography>
+                <Typography color="text.secondary" mb={1}>{selectedCompany.primarySector}</Typography>
+                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                  <Chip label={selectedCompany.legalStatus} size="small"
+                    sx={{ bgcolor: "#e6f4ea", color: EDU_COLORS.primary, fontWeight: 600 }} />
+                  {selectedCompany.secondarySector && (
+                    <Chip label={selectedCompany.secondarySector} size="small" variant="outlined" />
+                  )}
+                </Box>
               </Box>
             </Box>
-          </Grid>
-        ))}
-      </Grid>
-    </Box>
-  </Box>
-)}
+
+            <Box sx={{ px: 4, pb: 3, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2 }}>
+              {[
+                { label: "Team Size", value: selectedCompany.currentTeamSize },
+                { label: "Male", value: selectedCompany.maleCount },
+                { label: "Female", value: selectedCompany.femaleCount },
+                { label: "Branches", value: selectedCompany.numberOfBranches },
+              ].map((stat) => (
+                <Box key={stat.label}
+                  sx={{ bgcolor: "#f1f8f4", borderRadius: 2, py: 2, px: 1, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 20 }}>
+                  <Typography color="text.secondary" fontSize={12} mb={0.5}>{stat.label}</Typography>
+                  <Typography fontWeight={700} fontSize={20}>{stat.value}</Typography>
+                </Box>
+              ))}
+            </Box>
+
+            <Box sx={{ borderTop: "1px solid #eee", px: 4, py: 3 }}>
+              <Grid container spacing={2}>
+                {[
+                  { label: "PAN", value: selectedCompany.companyPAN },
+                  { label: "GSTIN / CIN", value: selectedCompany.gstin || "—" },
+                  {
+                    label: "Est. Date",
+                    value: selectedCompany.dateOfEstablishment
+                      ? new Date(selectedCompany.dateOfEstablishment).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                      : "—",
+                  },
+                  { label: "Website", value: selectedCompany.companyWebsite || "—" },
+                ].map((row) => (
+                  <Grid item xs={12} sm={6} key={row.label}>
+                    <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
+                      <Box>
+                        <Typography fontSize={11} color="text.secondary" mb={0.3}>{row.label}</Typography>
+                        <Typography fontSize={14} fontWeight={600}>{row.value}</Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          </Box>
+        )}
       </Dialog>
 
-      {/* ── OPTION 1: Add Placement Record Dialog (company name empty, user fills manually) ── */}
+      {/* ── Add Placement Record Dialog ── */}
       <Dialog open={recordDialogOpen} onClose={() => setRecordDialogOpen(false)} maxWidth="sm" fullWidth
         PaperProps={{ sx: { borderRadius: 3 } }}>
         <Box sx={{ p: 3 }}>
@@ -636,13 +772,102 @@ const handleAddRecord = async () => {
             <IconButton onClick={() => setRecordDialogOpen(false)}><CloseIcon /></IconButton>
           </Box>
           <Grid container spacing={2}>
-            <Grid item xs={6}>
+            {/* Company Name — full width, drives PAN visibility */}
+            <Grid item xs={12}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>Company Name *</Typography>
-              <TextField fullWidth size="small" placeholder="e.g. Google"
+              <TextField
+                fullWidth size="small" placeholder="e.g. Google"
                 value={recordFormData.companyName}
-                onChange={(e) => setRecordFormData({ ...recordFormData, companyName: e.target.value })}
-                error={!!recordErrors.companyName} helperText={recordErrors.companyName} />
+                onChange={(e) => {
+                  const val = e.target.value;
+                  // Check if typed name matches any registered company (case-insensitive)
+                  const matched = companies.find(
+                    (c) => c.startupName.trim().toLowerCase() === val.trim().toLowerCase()
+                  );
+                  setRecordFormData((prev) => ({
+                    ...prev,
+                    companyName: val,
+                    // Auto-fill PAN if matched, clear if name changed
+                    companyPAN: matched ? matched.companyPAN : "",
+                  }));
+                  if (matched) {
+                    setRecordErrors((prev) => ({ ...prev, companyName: "", companyPAN: "" }));
+                  }
+                }}
+                error={!!recordErrors.companyName}
+                helperText={
+                  recordErrors.companyName ||
+                  (companies.find(
+                    (c) => c.startupName.trim().toLowerCase() === recordFormData.companyName.trim().toLowerCase()
+                  )
+                    ? "✅ Registered company matched"
+                    : recordFormData.companyName.trim()
+                    ? "⚠️ No registered company with this name"
+                    : "")
+                }
+                FormHelperTextProps={{
+                  sx: {
+                    color: companies.find(
+                      (c) => c.startupName.trim().toLowerCase() === recordFormData.companyName.trim().toLowerCase()
+                    )
+                      ? "success.main"
+                      : recordFormData.companyName.trim()
+                      ? "warning.main"
+                      : undefined,
+                  },
+                }}
+              />
             </Grid>
+
+            {/* Company PAN — only shown when name MATCHES a registered company */}
+            {recordFormData.companyName.trim() &&
+              companies.find(
+                (c) => c.startupName.trim().toLowerCase() === recordFormData.companyName.trim().toLowerCase()
+              ) && (
+              <Grid item xs={12}>
+                <Typography fontSize={14} fontWeight={500} mb={0.5}>Company PAN *</Typography>
+                <TextField
+                  fullWidth size="small" placeholder="e.g. AABCT1234D"
+                  value={recordFormData.companyPAN}
+                  inputProps={{ maxLength: 10, style: { textTransform: "uppercase" } }}
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase();
+                    const matched = companies.find(
+                      (c) => c.companyPAN.trim().toUpperCase() === val
+                    );
+                    setRecordFormData((prev) => ({
+                      ...prev,
+                      companyPAN: val,
+                      // Auto-fill company name if PAN matches
+                      ...(matched ? { companyName: matched.startupName } : {}),
+                    }));
+                    if (matched) {
+                      setRecordErrors((prev) => ({ ...prev, companyPAN: "", companyName: "" }));
+                    }
+                  }}
+                  error={!!recordErrors.companyPAN}
+                  helperText={
+                    recordErrors.companyPAN ||
+                    (recordFormData.companyPAN.length === 10
+                      ? companies.find((c) => c.companyPAN.trim().toUpperCase() === recordFormData.companyPAN)
+                        ? `✅ Matched: ${companies.find((c) => c.companyPAN.trim().toUpperCase() === recordFormData.companyPAN).startupName}`
+                        : "❌ PAN not found in registered companies"
+                      : "Enter the 10-character PAN to verify")
+                  }
+                  FormHelperTextProps={{
+                    sx: {
+                      color:
+                        recordFormData.companyPAN.length === 10
+                          ? companies.find((c) => c.companyPAN.trim().toUpperCase() === recordFormData.companyPAN)
+                            ? "success.main"
+                            : "error.main"
+                          : "text.secondary",
+                    },
+                  }}
+                />
+              </Grid>
+            )}
+
             <Grid item xs={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>Role *</Typography>
               <TextField fullWidth size="small" placeholder="e.g. Software Engineer"
@@ -664,7 +889,7 @@ const handleAddRecord = async () => {
                 onChange={(e) => setRecordFormData({ ...recordFormData, place: e.target.value })}
                 error={!!recordErrors.place} helperText={recordErrors.place} />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={6}>
               <Typography fontSize={14} fontWeight={500} mb={0.5}>Students Count *</Typography>
               <TextField fullWidth size="small" placeholder="e.g. 10"
                 value={recordFormData.count}
@@ -683,7 +908,7 @@ const handleAddRecord = async () => {
         </Box>
       </Dialog>
 
-      <Ads page="placements" />
+  
     </Box>
   );
 };
