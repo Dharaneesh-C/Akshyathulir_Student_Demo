@@ -1,0 +1,39 @@
+{
+  "startupName": "TechNova Solutions",
+  "legalStatus": "Private Limited",
+  "dateOfEstablishment": "2023-04-10",
+  "primarySector": "AI / ML",
+  "secondarySector": "SaaS",
+  "companyPAN": "AABCT1234D",
+  "gstin": "29AABCT1234D1Z5",
+  "currentTeamSize": 120,
+  "maleCount": 70,
+  "femaleCount": 50,
+  "companyWebsite": "https://technova.ai",
+  "numberOfBranches": 3,
+  "adminEmail": "dharan@gmail.com",
+
+  "branchAddresses": [
+    {
+      "country": "India",
+      "state": "Karnataka",
+      "district": "Bangalore Urban",
+      "city": "Bangalore",
+      "pinCode": "560001"
+    },
+    {
+      "country": "India",
+      "state": "Tamil Nadu",
+      "district": "Chennai",
+      "city": "Chennai",
+      "pinCode": "600001"
+    },
+    {
+      "country": "India",
+      "state": "Telangana",
+      "district": "Hyderabad",
+      "city": "Hyderabad",
+      "pinCode": "500001"
+    }
+  ]
+}
